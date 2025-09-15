@@ -96,9 +96,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   const deleteHive = useCallback((id: string) => {
     updateState(prevState => ({
       hives: (prevState.hives || []).filter(hive => hive.id !== id),
-      inspections: (prevState.inspections || []).filter(inspection => inspection.hiveId !== id),
       tasks: (prevState.tasks || []).filter(task => task.hiveId !== id),
-      yields: (prevState.yields || []).filter(yieldItem => yieldItem.hiveId !== id),
     }));
   }, [updateState]);
 

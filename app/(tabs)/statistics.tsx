@@ -76,6 +76,7 @@ export default function StatisticsScreen() {
   
   const getAvailableYears = () => {
     const years = new Set<number>();
+    years.add(currentYear); // Always include current year
     yearlyStats.forEach(stat => years.add(stat.year));
     inspections.forEach(inspection => years.add(new Date(inspection.date).getFullYear()));
     yields.forEach(yieldItem => years.add(new Date(yieldItem.date).getFullYear()));
