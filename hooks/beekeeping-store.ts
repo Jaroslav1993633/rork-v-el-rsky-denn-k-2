@@ -360,13 +360,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     };
   }, [state.monthlyStats, state.yearlyStats]);
 
-  // Auto-update stats when data changes
-  useEffect(() => {
-    if (!isLoading) {
-      updateMonthlyStats();
-      updateYearlyStats();
-    }
-  }, [state.inspections, state.yields, isLoading, updateMonthlyStats, updateYearlyStats]);
+
 
   return useMemo(() => ({
     ...state,
