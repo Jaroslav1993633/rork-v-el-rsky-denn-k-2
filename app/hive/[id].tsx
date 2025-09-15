@@ -73,6 +73,7 @@ export default function HiveDetailScreen() {
   const [editType, setEditType] = useState<'odlozenec' | 'roj' | 'zabehnutaRodina' | 'kupeneVcelstvo' | 'ine'>('zabehnutaRodina');
   const [editQueenStatus, setEditQueenStatus] = useState<'stara' | 'nova' | 'vylahne'>('stara');
   const [editQueenColor, setEditQueenColor] = useState('');
+  const [editColonyFoundingDate, setEditColonyFoundingDate] = useState('');
   const [newInspectionNote, setNewInspectionNote] = useState('');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
@@ -111,6 +112,11 @@ export default function HiveDetailScreen() {
     setEditType(hive.type);
     setEditQueenStatus(hive.queenStatus);
     setEditQueenColor(hive.queenColor);
+    
+    const foundingDate = new Date(hive.colonyFoundingDate);
+    const formattedFoundingDate = `${foundingDate.getDate().toString().padStart(2, '0')}.${(foundingDate.getMonth() + 1).toString().padStart(2, '0')}.${foundingDate.getFullYear()}`;
+    setEditColonyFoundingDate(formattedFoundingDate);
+    
     setIsEditing(true);
   };
 
@@ -137,12 +143,35 @@ export default function HiveDetailScreen() {
       return;
     }
 
+    // Parse colony founding date
+    let foundingDate = new Date(hive.colonyFoundingDate);
+    if (editColonyFoundingDate.trim()) {
+      const dateParts = editColonyFoundingDate.trim().split('.');
+      if (dateParts.length === 3) {
+        const day = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10) - 1;
+        const year = parseInt(dateParts[2], 10);
+        
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year) && 
+            day >= 1 && day <= 31 && month >= 0 && month <= 11 && year >= 2000) {
+          const customDate = new Date(year, month, day, 12, 0, 0);
+          if (!isNaN(customDate.getTime()) && 
+              customDate.getDate() === day && 
+              customDate.getMonth() === month && 
+              customDate.getFullYear() === year) {
+            foundingDate = customDate;
+          }
+        }
+      }
+    }
+
     updateHive(hive.id, {
       name: editName.trim(),
       frameCount: frameCount,
       type: editType,
       queenStatus: editQueenStatus,
       queenColor: editQueenColor,
+      colonyFoundingDate: foundingDate.toISOString(),
     });
     setIsEditing(false);
   };
@@ -513,6 +542,17 @@ export default function HiveDetailScreen() {
                   ))}
                 </View>
               </View>
+              
+              <View style={styles.editRow}>
+                <Text style={styles.editLabel}>Dátum založenia rodiny:</Text>
+                <TextInput
+                  style={styles.editInput}
+                  value={editColonyFoundingDate}
+                  onChangeText={setEditColonyFoundingDate}
+                  placeholder="DD.MM.YYYY"
+                  keyboardType="numeric"
+                />
+              </View>
             </View>
           ) : (
             <View style={styles.infoGrid}>
@@ -531,6 +571,10 @@ export default function HiveDetailScreen() {
               <View style={styles.infoItem}>
                 <Text style={styles.infoLabel}>Farba matky:</Text>
                 <Text style={styles.infoValue}>{hive.queenColor}</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Dátum založenia rodiny:</Text>
+                <Text style={styles.infoValue}>{new Date(hive.colonyFoundingDate).toLocaleDateString('sk-SK')}</Text>
               </View>
             </View>
           )}

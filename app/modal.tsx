@@ -46,6 +46,7 @@ export default function AddHiveModal() {
   const [queenStatus, setQueenStatus] = useState<'stara' | 'nova' | 'vylahne'>('stara');
   const [queenColor, setQueenColor] = useState('#f3f4f6');
   const [queenColorName, setQueenColorName] = useState('Neoznačená');
+  const [colonyFoundingDate, setColonyFoundingDate] = useState('');
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -67,12 +68,35 @@ export default function AddHiveModal() {
       return;
     }
 
+    // Parse colony founding date or use current date
+    let foundingDate = new Date();
+    if (colonyFoundingDate.trim()) {
+      const dateParts = colonyFoundingDate.trim().split('.');
+      if (dateParts.length === 3) {
+        const day = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10) - 1;
+        const year = parseInt(dateParts[2], 10);
+        
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year) && 
+            day >= 1 && day <= 31 && month >= 0 && month <= 11 && year >= 2000) {
+          const customDate = new Date(year, month, day, 12, 0, 0);
+          if (!isNaN(customDate.getTime()) && 
+              customDate.getDate() === day && 
+              customDate.getMonth() === month && 
+              customDate.getFullYear() === year) {
+            foundingDate = customDate;
+          }
+        }
+      }
+    }
+
     addHive({
       name: name.trim(),
       type,
       frameCount: frameCountNum,
       queenStatus,
       queenColor: queenColorName,
+      colonyFoundingDate: foundingDate.toISOString(),
     });
 
     router.back();
@@ -197,6 +221,18 @@ export default function AddHiveModal() {
                 value={frameCount}
                 onChangeText={setFrameCount}
                 placeholder="10"
+                placeholderTextColor="#9ca3af"
+                keyboardType="numeric"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Dátum založenia rodiny</Text>
+              <TextInput
+                style={styles.input}
+                value={colonyFoundingDate}
+                onChangeText={setColonyFoundingDate}
+                placeholder="DD.MM.YYYY - nechajte prázdne pre dnešný dátum"
                 placeholderTextColor="#9ca3af"
                 keyboardType="numeric"
               />

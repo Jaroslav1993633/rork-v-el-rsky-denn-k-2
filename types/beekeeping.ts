@@ -5,6 +5,7 @@ export interface Hive {
   frameCount: number;
   queenStatus: 'stara' | 'nova' | 'vylahne';
   queenColor: string;
+  colonyFoundingDate: string;
   createdAt: string;
 }
 

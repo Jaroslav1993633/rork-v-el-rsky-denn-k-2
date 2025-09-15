@@ -8,6 +8,7 @@ export const sampleHives: Hive[] = [
     frameCount: 10,
     queenStatus: 'stara',
     queenColor: 'Žltá',
+    colonyFoundingDate: '2024-02-15T10:00:00Z',
     createdAt: '2024-03-01T10:00:00Z',
   },
   {
@@ -17,6 +18,7 @@ export const sampleHives: Hive[] = [
     frameCount: 8,
     queenStatus: 'nova',
     queenColor: 'Fialová',
+    colonyFoundingDate: '2024-04-10T14:30:00Z',
     createdAt: '2024-04-15T14:30:00Z',
   },
 ];
