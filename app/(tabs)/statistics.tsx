@@ -267,20 +267,13 @@ export default function StatisticsScreen() {
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+          <TouchableOpacity 
+            style={styles.sectionHeaderClickable}
+            onPress={() => setShowHistorical(!showHistorical)}
+          >
             <Text style={styles.sectionTitle}>História štatistík</Text>
-            <TouchableOpacity 
-              onPress={() => setShowHistorical(!showHistorical)}
-              style={styles.toggleButton}
-            >
-              <History color="#6b7280" size={20} />
-              {showHistorical ? (
-                <ChevronUp color="#6b7280" size={16} />
-              ) : (
-                <ChevronDown color="#6b7280" size={16} />
-              )}
-            </TouchableOpacity>
-          </View>
+            <Text style={styles.sectionSubtitle}>Kliknite pre zobrazenie histórie</Text>
+          </TouchableOpacity>
           
           {showHistorical && (
             <View style={styles.historicalSection}>
@@ -300,13 +293,13 @@ export default function StatisticsScreen() {
                         {year}
                       </Text>
                       <View style={styles.yearStats}>
-                        <Text style={styles.yearStatsText}>
+                        <Text style={[styles.yearStatsText, isSelected && styles.yearStatsTextSelected]}>
                           {getInspectionsByYear(year)} prehliadok
                         </Text>
-                        <Text style={styles.yearStatsText}>
+                        <Text style={[styles.yearStatsText, isSelected && styles.yearStatsTextSelected]}>
                           {getHiveCountByYear(year)} úľov
                         </Text>
-                        <Text style={styles.yearStatsText}>
+                        <Text style={[styles.yearStatsText, isSelected && styles.yearStatsTextSelected]}>
                           {Object.values(getYieldByType(year)).reduce((sum, amount) => sum + amount, 0).toFixed(1)} kg
                         </Text>
                       </View>
@@ -658,6 +651,9 @@ const styles = StyleSheet.create({
   yearStatsText: {
     fontSize: 12,
     color: '#6b7280',
+  },
+  yearStatsTextSelected: {
+    color: '#ffffff',
   },
   monthlyBreakdown: {
     marginTop: 16,
