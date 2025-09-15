@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { BarChart3, TrendingUp, Hexagon, Calendar, RotateCcw, History, ChevronDown, ChevronUp, Plus, CalendarDays } from 'lucide-react-native';
+import { BarChart3, TrendingUp, Hexagon, Calendar, RotateCcw, ChevronDown, ChevronUp, Plus, CalendarDays } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -31,8 +31,7 @@ export default function StatisticsScreen() {
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
   
-  const [showHistorical, setShowHistorical] = useState(false);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [selectedYearForStats, setSelectedYearForStats] = useState(currentYear);
 
@@ -266,93 +265,7 @@ export default function StatisticsScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.statsGrid}>
-            <TouchableOpacity 
-              style={styles.statCard}
-              onPress={() => setShowHistorical(!showHistorical)}
-            >
-              <View style={styles.statHeader}>
-                <View style={[styles.statIcon, { backgroundColor: "#ef4444" }]}>
-                  <History color="#ffffff" size={20} />
-                </View>
-                <Text style={styles.statTitle}>História štatistík</Text>
-                {showHistorical ? (
-                  <ChevronUp color="#6b7280" size={16} />
-                ) : (
-                  <ChevronDown color="#6b7280" size={16} />
-                )}
-              </View>
-              <Text style={styles.statValue}>{availableYears.length}</Text>
-              <Text style={styles.statSubtitle}>Dostupných rokov</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {showHistorical && (
-            <View style={styles.historicalSection}>
-              <Text style={styles.historicalTitle}>Dostupné roky:</Text>
-              <View style={styles.yearsList}>
-                {availableYears.map(year => {
-                  const yearStats = yearlyStats.find(stat => stat.year === year);
-                  const isSelected = selectedYear === year;
-                  
-                  return (
-                    <TouchableOpacity
-                      key={year}
-                      style={[styles.yearButton, isSelected && styles.yearButtonSelected]}
-                      onPress={() => setSelectedYear(isSelected ? null : year)}
-                    >
-                      <Text style={[styles.yearButtonText, isSelected && styles.yearButtonTextSelected]}>
-                        {year}
-                      </Text>
-                      <View style={styles.yearStats}>
-                        <Text style={[styles.yearStatsText, isSelected && styles.yearStatsTextSelected]}>
-                          {getInspectionsByYear(year)} prehliadok
-                        </Text>
-                        <Text style={[styles.yearStatsText, isSelected && styles.yearStatsTextSelected]}>
-                          {getHiveCountByYear(year)} úľov
-                        </Text>
-                        <Text style={[styles.yearStatsText, isSelected && styles.yearStatsTextSelected]}>
-                          {Object.values(getYieldByType(year)).reduce((sum, amount) => sum + amount, 0).toFixed(1)} kg
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              
-              {selectedYear && (
-                <View style={styles.monthlyBreakdown}>
-                  <Text style={styles.monthlyTitle}>Mesačný prehľad {selectedYear}:</Text>
-                  <View style={styles.monthsList}>
-                    {monthNames.map((monthName, monthIndex) => {
-                      const yearStats = yearlyStats.find(stat => stat.year === selectedYear);
-                      const monthStats = yearStats?.monthlyBreakdown.find(stat => stat.month === monthIndex);
-                      
-                      if (!monthStats || (monthStats.inspectionCount === 0 && monthStats.yieldAmount === 0)) {
-                        return null;
-                      }
-                      
-                      return (
-                        <View key={monthIndex} style={styles.monthItem}>
-                          <Text style={styles.monthName}>{monthName}</Text>
-                          <View style={styles.monthStatsContainer}>
-                            <Text style={styles.monthStat}>
-                              {monthStats.inspectionCount} prehliadok
-                            </Text>
-                            <Text style={styles.monthStat}>
-                              {monthStats.yieldAmount.toFixed(1)} kg
-                            </Text>
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
+
 
         <View style={styles.section}>
           <TouchableOpacity 
@@ -620,91 +533,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#f3f4f6',
   },
-  historicalSection: {
-    backgroundColor: '#f9fafb',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  historicalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  yearsList: {
-    gap: 8,
-  },
-  yearButton: {
-    backgroundColor: '#ffffff',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  yearButtonSelected: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  yearButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    textAlign: 'center',
-  },
-  yearButtonTextSelected: {
-    color: '#ffffff',
-  },
-  yearStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  yearStatsText: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  yearStatsTextSelected: {
-    color: '#ffffff',
-  },
-  monthlyBreakdown: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  monthlyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  monthsList: {
-    gap: 8,
-  },
-  monthItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  monthName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#111827',
-  },
-  monthStatsContainer: {
-    alignItems: 'flex-end',
-  },
-  monthStat: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
+
   fab: {
     position: 'absolute',
     bottom: 20,
