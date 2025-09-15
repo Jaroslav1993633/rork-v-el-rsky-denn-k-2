@@ -63,6 +63,14 @@ export default function HivesScreen() {
             </View>
           </View>
         )}
+        {item.colonyFoundingDate && (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Založenie rodiny:</Text>
+            <Text style={styles.detailValue}>
+              {new Date(item.colonyFoundingDate).toLocaleDateString('sk-SK')}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
