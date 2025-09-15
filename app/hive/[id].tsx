@@ -37,6 +37,14 @@ const queenStatusLabels = {
   vylahne: 'Ide sa vyliahnuť',
 };
 
+const queenColors = [
+  'Biela',
+  'Žltá', 
+  'Červená',
+  'Zelená',
+  'Modrá'
+];
+
 export default function HiveDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { 
@@ -116,9 +124,9 @@ export default function HiveDetailScreen() {
       return;
     }
 
-    if (!editQueenColor.trim()) {
+    if (!editQueenColor) {
       if (Platform.OS === 'web') {
-        alert('Zadajte farbu matky');
+        alert('Vyberte farbu matky');
       }
       return;
     }
@@ -128,7 +136,7 @@ export default function HiveDetailScreen() {
       frameCount: frameCount,
       type: editType,
       queenStatus: editQueenStatus,
-      queenColor: editQueenColor.trim(),
+      queenColor: editQueenColor,
     });
     setIsEditing(false);
   };
@@ -397,12 +405,25 @@ export default function HiveDetailScreen() {
               
               <View style={styles.editRow}>
                 <Text style={styles.editLabel}>Farba matky:</Text>
-                <TextInput
-                  style={styles.editInput}
-                  value={editQueenColor}
-                  onChangeText={setEditQueenColor}
-                  placeholder="Napr. Žltá, Červená, Fialová, Zelená, Modrá"
-                />
+                <View style={styles.colorSelector}>
+                  {queenColors.map((color) => (
+                    <TouchableOpacity
+                      key={color}
+                      style={[
+                        styles.colorOption,
+                        editQueenColor === color && styles.selectedColorOption,
+                      ]}
+                      onPress={() => setEditQueenColor(color)}
+                    >
+                      <Text style={[
+                        styles.colorText,
+                        editQueenColor === color && styles.selectedColorText,
+                      ]}>
+                        {color}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             </View>
           ) : (
@@ -1020,5 +1041,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#6b7280',
+  },
+  colorSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  colorOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+  },
+  selectedColorOption: {
+    backgroundColor: '#22c55e',
+    borderColor: '#22c55e',
+  },
+  colorText: {
+    fontSize: 12,
+    color: '#374151',
+  },
+  selectedColorText: {
+    color: '#ffffff',
   },
 });

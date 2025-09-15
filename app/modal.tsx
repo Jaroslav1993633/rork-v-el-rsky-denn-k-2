@@ -33,8 +33,7 @@ const queenColors = [
   { color: '#ffff00', name: 'Žltá' },
   { color: '#ff0000', name: 'Červená' },
   { color: '#00ff00', name: 'Zelená' },
-  { color: '#0000ff', name: 'Modrá' },
-  { color: '#800080', name: 'Fialová' }
+  { color: '#0000ff', name: 'Modrá' }
 ];
 
 export default function AddHiveModal() {
