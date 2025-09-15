@@ -41,7 +41,10 @@ export default function StatisticsScreen() {
   const thisYearYield = getThisYearYield();
   const activeHives = hives.filter(hive => !hive.isDeleted);
   const activeHiveCount = getActiveHiveCount();
-  const averageInspectionsPerHive = activeHiveCount > 0 ? (inspections.length / activeHiveCount).toFixed(1) : '0';
+  const averageInspectionsPerHive = activeHiveCount > 0 ? (inspections.filter(inspection => {
+    const hive = hives.find(h => h.id === inspection.hiveId);
+    return hive && !hive.isDeleted;
+  }).length / activeHiveCount).toFixed(1) : '0';
   
   const monthNames = [
     'Január', 'Február', 'Marec', 'Apríl', 'Máj', 'Jún',
@@ -179,9 +182,11 @@ export default function StatisticsScreen() {
   const yieldByHive = getYieldByTypeAndHive(selectedYearForStats);
   
   const getInspectionsByYear = (year: number) => {
-    return inspections.filter(inspection => 
-      new Date(inspection.date).getFullYear() === year
-    ).length;
+    return inspections.filter(inspection => {
+      const inspectionYear = new Date(inspection.date).getFullYear();
+      const hive = hives.find(h => h.id === inspection.hiveId);
+      return inspectionYear === year && hive && !hive.isDeleted;
+    }).length;
   };
   
 
