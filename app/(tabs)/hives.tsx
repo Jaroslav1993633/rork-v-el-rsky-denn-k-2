@@ -30,6 +30,9 @@ export default function HivesScreen() {
   const { hives } = useBeekeeping();
   const insets = useSafeAreaInsets();
 
+  // Filter out deleted hives
+  const activeHives = hives.filter(hive => !hive.isDeleted);
+
   const renderHiveItem = ({ item }: { item: Hive }) => (
     <TouchableOpacity 
       style={styles.hiveCard}
@@ -104,11 +107,11 @@ export default function HivesScreen() {
         </TouchableOpacity>
       </View>
 
-      {hives.length === 0 ? (
+      {activeHives.length === 0 ? (
         <EmptyState />
       ) : (
         <FlatList
-          data={hives}
+          data={activeHives}
           renderItem={renderHiveItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
