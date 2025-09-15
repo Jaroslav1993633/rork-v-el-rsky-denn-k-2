@@ -55,6 +55,19 @@ export default function QuickInspectionScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Poznámky k prehliadke</Text>
+          <TextInput
+            style={styles.notesInput}
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="Opíšte čo ste robili pri prehliadke..."
+            multiline
+            numberOfLines={6}
+            textAlignVertical="top"
+          />
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Vyberte úľ</Text>
           <View style={styles.hivesCompactGrid}>
             {hives.map((hive) => (
@@ -83,19 +96,6 @@ export default function QuickInspectionScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Poznámky k prehliadke</Text>
-          <TextInput
-            style={styles.notesInput}
-            value={notes}
-            onChangeText={setNotes}
-            placeholder="Opíšte čo ste robili pri prehliadke..."
-            multiline
-            numberOfLines={6}
-            textAlignVertical="top"
-          />
         </View>
       </ScrollView>
     </View>
