@@ -29,6 +29,7 @@ const queenStatuses = [
 ] as const;
 
 const queenColors = [
+  { color: '#f3f4f6', name: 'Neoznačená' },
   { color: '#ffffff', name: 'Biela' },
   { color: '#ffff00', name: 'Žltá' },
   { color: '#ff0000', name: 'Červená' },
@@ -43,8 +44,8 @@ export default function AddHiveModal() {
   const [type, setType] = useState<'odlozenec' | 'roj' | 'zabehnutaRodina' | 'kupeneVcelstvo' | 'ine'>('odlozenec');
   const [frameCount, setFrameCount] = useState('10');
   const [queenStatus, setQueenStatus] = useState<'stara' | 'nova' | 'vylahne'>('stara');
-  const [queenColor, setQueenColor] = useState('#ffffff');
-  const [queenColorName, setQueenColorName] = useState('Biela');
+  const [queenColor, setQueenColor] = useState('#f3f4f6');
+  const [queenColorName, setQueenColorName] = useState('Neoznačená');
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -138,7 +139,7 @@ export default function AddHiveModal() {
               styles.colorOption,
               { backgroundColor: colorItem.color },
               queenColor === colorItem.color && styles.selectedColor,
-              colorItem.color === '#ffffff' && styles.whiteColor,
+              (colorItem.color === '#ffffff' || colorItem.color === '#f3f4f6') && styles.whiteColor,
             ]}
             onPress={() => {
               setQueenColor(colorItem.color);
