@@ -146,7 +146,7 @@ export default function StatisticsScreen() {
       if (hive) {
         if (hive.isDeleted && hive.deletedAt) {
           const deletedDate = new Date(hive.deletedAt).toLocaleDateString('sk-SK');
-          hiveName = `Úľ č. zrušený (${deletedDate})`;
+          hiveName = `${hive.name} - zrušený (${deletedDate})`;
         } else {
           hiveName = hive.name;
         }
@@ -181,9 +181,17 @@ export default function StatisticsScreen() {
   };
   
   const getHiveCountByYear = (year: number) => {
-    return hives.filter(hive => 
-      new Date(hive.createdAt).getFullYear() <= year && !hive.isDeleted
-    ).length;
+    return hives.filter(hive => {
+      const createdYear = new Date(hive.createdAt).getFullYear();
+      const isCreatedByYear = createdYear <= year;
+      
+      if (hive.isDeleted && hive.deletedAt) {
+        const deletedYear = new Date(hive.deletedAt).getFullYear();
+        return isCreatedByYear && deletedYear > year;
+      }
+      
+      return isCreatedByYear && !hive.isDeleted;
+    }).length;
   };
   const yieldTypeLabels = {
     med: 'Med',
