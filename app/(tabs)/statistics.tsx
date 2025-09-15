@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { BarChart3, TrendingUp, Hexagon, Calendar, RotateCcw, History, ChevronDown, ChevronUp, Plus } from 'lucide-react-native';
+import { BarChart3, TrendingUp, Hexagon, Calendar, RotateCcw, History, ChevronDown, ChevronUp, Plus, CalendarDays } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -26,16 +26,19 @@ export default function StatisticsScreen() {
     getHistoricalStats,
   } = useBeekeeping();
   const insets = useSafeAreaInsets();
-  const [showHistorical, setShowHistorical] = useState(false);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-
-  const thisMonthInspections = getThisMonthInspections();
-  const thisYearYield = getThisYearYield();
-  const averageInspectionsPerHive = hives.length > 0 ? (inspections.length / hives.length).toFixed(1) : '0';
   
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
+  
+  const [showHistorical, setShowHistorical] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const [selectedYearForStats, setSelectedYearForStats] = useState(currentYear);
+
+  const thisMonthInspections = getThisMonthInspections();
+  const thisYearYield = getThisYearYield();
+  const averageInspectionsPerHive = hives.length > 0 ? (inspections.length / hives.length).toFixed(1) : '0';
   
   const monthNames = [
     'Január', 'Február', 'Marec', 'Apríl', 'Máj', 'Jún',
@@ -114,8 +117,12 @@ export default function StatisticsScreen() {
     </View>
   );
 
-  const getYieldByType = () => {
-    const yieldByType = yields.reduce((acc, yieldItem) => {
+  const getYieldByType = (year?: number) => {
+    const filteredYields = year 
+      ? yields.filter(yieldItem => new Date(yieldItem.date).getFullYear() === year)
+      : yields;
+      
+    const yieldByType = filteredYields.reduce((acc, yieldItem) => {
       const type = yieldItem.type;
       if (!acc[type]) {
         acc[type] = 0;
@@ -127,7 +134,46 @@ export default function StatisticsScreen() {
     return yieldByType;
   };
 
-  const yieldByType = getYieldByType();
+  const getYieldByTypeAndHive = (year?: number) => {
+    const filteredYields = year 
+      ? yields.filter(yieldItem => new Date(yieldItem.date).getFullYear() === year)
+      : yields;
+      
+    const yieldByHive = filteredYields.reduce((acc, yieldItem) => {
+      const hive = hives.find(h => h.id === yieldItem.hiveId);
+      const hiveName = hive ? hive.name : `Úľ ${yieldItem.hiveId}`;
+      
+      if (!acc[hiveName]) {
+        acc[hiveName] = { total: 0, byType: {} };
+      }
+      
+      acc[hiveName].total += yieldItem.amount;
+      
+      if (!acc[hiveName].byType[yieldItem.type]) {
+        acc[hiveName].byType[yieldItem.type] = 0;
+      }
+      acc[hiveName].byType[yieldItem.type] += yieldItem.amount;
+      
+      return acc;
+    }, {} as Record<string, { total: number; byType: Record<string, number> }>);
+
+    return yieldByHive;
+  };
+
+  const yieldByType = getYieldByType(selectedYearForStats);
+  const yieldByHive = getYieldByTypeAndHive(selectedYearForStats);
+  
+  const getInspectionsByYear = (year: number) => {
+    return inspections.filter(inspection => 
+      new Date(inspection.date).getFullYear() === year
+    ).length;
+  };
+  
+  const getHiveCountByYear = (year: number) => {
+    return hives.filter(hive => 
+      new Date(hive.createdAt).getFullYear() <= year
+    ).length;
+  };
   const yieldTypeLabels = {
     med: 'Med',
     pel: 'Peľ',
@@ -143,18 +189,61 @@ export default function StatisticsScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Celkový prehľad</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Celkový prehľad</Text>
+            <TouchableOpacity 
+              onPress={() => setShowYearPicker(!showYearPicker)}
+              style={styles.yearPickerButton}
+            >
+              <CalendarDays color="#6b7280" size={20} />
+              <Text style={styles.yearPickerText}>{selectedYearForStats}</Text>
+              {showYearPicker ? (
+                <ChevronUp color="#6b7280" size={16} />
+              ) : (
+                <ChevronDown color="#6b7280" size={16} />
+              )}
+            </TouchableOpacity>
+          </View>
+          
+          {showYearPicker && (
+            <View style={styles.yearPickerContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.yearPickerScroll}>
+                {availableYears.map(year => (
+                  <TouchableOpacity
+                    key={year}
+                    style={[
+                      styles.yearPickerItem,
+                      selectedYearForStats === year && styles.yearPickerItemSelected
+                    ]}
+                    onPress={() => {
+                      setSelectedYearForStats(year);
+                      setShowYearPicker(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.yearPickerItemText,
+                      selectedYearForStats === year && styles.yearPickerItemTextSelected
+                    ]}>
+                      {year}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+          
           <View style={styles.statsGrid}>
             <StatCard
-              title="Celkom úľov"
-              value={hives.length}
+              title="Úle v roku"
+              value={getHiveCountByYear(selectedYearForStats)}
+              subtitle={`Celkom úľov: ${hives.length}`}
               icon={Hexagon}
               color="#22c55e"
             />
             <StatCard
-              title="Celkom prehliadok"
-              value={inspections.length}
-              subtitle={`Priemer ${averageInspectionsPerHive} na úľ`}
+              title={`Prehliadky ${selectedYearForStats}`}
+              value={getInspectionsByYear(selectedYearForStats)}
+              subtitle={`Celkom: ${inspections.length} prehliadok`}
               icon={Calendar}
               color="#3b82f6"
             />
@@ -167,12 +256,12 @@ export default function StatisticsScreen() {
               onReset={handleResetMonth}
             />
             <StatCard
-              title="Úroda tento rok"
-              value={`${thisYearYield.toFixed(1)} kg`}
-              subtitle={`Rok ${currentYear}`}
+              title={`Úroda ${selectedYearForStats}`}
+              value={`${getYieldByType(selectedYearForStats).med || 0} kg medu`}
+              subtitle={`Celková úroda: ${Object.values(getYieldByType(selectedYearForStats)).reduce((sum, amount) => sum + amount, 0).toFixed(1)} kg`}
               icon={BarChart3}
               color="#8b5cf6"
-              onReset={handleResetYear}
+              onReset={selectedYearForStats === currentYear ? handleResetYear : undefined}
             />
           </View>
         </View>
@@ -210,16 +299,17 @@ export default function StatisticsScreen() {
                       <Text style={[styles.yearButtonText, isSelected && styles.yearButtonTextSelected]}>
                         {year}
                       </Text>
-                      {yearStats && (
-                        <View style={styles.yearStats}>
-                          <Text style={styles.yearStatsText}>
-                            {yearStats.totalInspections} prehliadok
-                          </Text>
-                          <Text style={styles.yearStatsText}>
-                            {yearStats.totalYield.toFixed(1)} kg
-                          </Text>
-                        </View>
-                      )}
+                      <View style={styles.yearStats}>
+                        <Text style={styles.yearStatsText}>
+                          {getInspectionsByYear(year)} prehliadok
+                        </Text>
+                        <Text style={styles.yearStatsText}>
+                          {getHiveCountByYear(year)} úľov
+                        </Text>
+                        <Text style={styles.yearStatsText}>
+                          {Object.values(getYieldByType(year)).reduce((sum, amount) => sum + amount, 0).toFixed(1)} kg
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
@@ -259,7 +349,24 @@ export default function StatisticsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Úroda podľa typu</Text>
+          <TouchableOpacity 
+            style={styles.sectionHeaderClickable}
+            onPress={() => {
+              const totalYield = Object.values(yieldByType).reduce((sum, amount) => sum + amount, 0);
+              const yieldDetails = Object.entries(yieldByType)
+                .map(([type, amount]) => `${yieldTypeLabels[type as keyof typeof yieldTypeLabels] || type}: ${amount.toFixed(1)} kg`)
+                .join('\n');
+              
+              Alert.alert(
+                `Úroda ${selectedYearForStats}`,
+                `Celková úroda: ${totalYield.toFixed(1)} kg\n\nDetaily:\n${yieldDetails}`,
+                [{ text: 'OK' }]
+              );
+            }}
+          >
+            <Text style={styles.sectionTitle}>Úroda podľa typu ({selectedYearForStats})</Text>
+            <Text style={styles.sectionSubtitle}>Kliknite pre detaily</Text>
+          </TouchableOpacity>
           <View style={styles.yieldList}>
             {Object.entries(yieldByType).map(([type, amount]) => (
               <View key={type} style={styles.yieldItem}>
@@ -272,7 +379,35 @@ export default function StatisticsScreen() {
             {Object.keys(yieldByType).length === 0 && (
               <View style={styles.emptyYield}>
                 <Text style={styles.emptyYieldText}>
-                  Zatiaľ neboli zaznamenané žiadne výnosy
+                  Zatiaľ neboli zaznamenané žiadne výnosy pre rok {selectedYearForStats}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+        
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Úroda podľa úľov ({selectedYearForStats})</Text>
+          <View style={styles.hiveYieldList}>
+            {Object.entries(yieldByHive).map(([hiveName, data]) => (
+              <View key={hiveName} style={styles.hiveYieldItem}>
+                <View style={styles.hiveYieldHeader}>
+                  <Text style={styles.hiveYieldName}>{hiveName}</Text>
+                  <Text style={styles.hiveYieldTotal}>{data.total.toFixed(1)} kg</Text>
+                </View>
+                <View style={styles.hiveYieldBreakdown}>
+                  {Object.entries(data.byType).map(([type, amount]) => (
+                    <Text key={type} style={styles.hiveYieldType}>
+                      {yieldTypeLabels[type as keyof typeof yieldTypeLabels] || type}: {amount.toFixed(1)} kg
+                    </Text>
+                  ))}
+                </View>
+              </View>
+            ))}
+            {Object.keys(yieldByHive).length === 0 && (
+              <View style={styles.emptyYield}>
+                <Text style={styles.emptyYieldText}>
+                  Zatiaľ neboli zaznamenané žiadne výnosy pre rok {selectedYearForStats}
                 </Text>
               </View>
             )}
@@ -579,5 +714,86 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
+  },
+  yearPickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+  },
+  yearPickerText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  yearPickerContainer: {
+    marginBottom: 16,
+  },
+  yearPickerScroll: {
+    maxHeight: 50,
+  },
+  yearPickerItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  yearPickerItemSelected: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  yearPickerItemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#111827',
+  },
+  yearPickerItemTextSelected: {
+    color: '#ffffff',
+  },
+  sectionHeaderClickable: {
+    marginBottom: 16,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 4,
+  },
+  hiveYieldList: {
+    gap: 12,
+  },
+  hiveYieldItem: {
+    backgroundColor: '#f9fafb',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  hiveYieldHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  hiveYieldName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  hiveYieldTotal: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#22c55e',
+  },
+  hiveYieldBreakdown: {
+    gap: 4,
+  },
+  hiveYieldType: {
+    fontSize: 14,
+    color: '#6b7280',
   },
 });
