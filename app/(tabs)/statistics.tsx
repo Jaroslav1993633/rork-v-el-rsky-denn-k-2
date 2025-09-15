@@ -41,6 +41,12 @@ export default function StatisticsScreen() {
   const thisYearYield = getThisYearYield();
   const activeHives = hives.filter(hive => !hive.isDeleted);
   const activeHiveCount = getActiveHiveCount();
+  
+  // Debug logging
+  console.log('Statistics - Total hives:', hives.length);
+  console.log('Statistics - Active hives:', activeHives.length);
+  console.log('Statistics - getActiveHiveCount():', activeHiveCount);
+  console.log('Statistics - Hives data:', hives.map(h => ({ id: h.id, name: h.name, isDeleted: h.isDeleted })));
   const averageInspectionsPerHive = activeHiveCount > 0 ? (inspections.filter(inspection => {
     const hive = hives.find(h => h.id === inspection.hiveId);
     return hive && !hive.isDeleted;

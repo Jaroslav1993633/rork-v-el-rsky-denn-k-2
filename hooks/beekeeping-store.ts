@@ -94,14 +94,21 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   }, [updateState]);
 
   const deleteHive = useCallback((id: string) => {
-    updateState(prevState => ({
-      hives: (prevState.hives || []).map(hive =>
-        hive.id === id 
-          ? { ...hive, isDeleted: true, deletedAt: new Date().toISOString() }
-          : hive
-      ),
-      tasks: (prevState.tasks || []).filter(task => task.hiveId !== id),
-    }));
+    updateState(prevState => {
+      const updatedState = {
+        hives: (prevState.hives || []).map(hive =>
+          hive.id === id 
+            ? { ...hive, isDeleted: true, deletedAt: new Date().toISOString() }
+            : hive
+        ),
+        tasks: (prevState.tasks || []).filter(task => task.hiveId !== id),
+      };
+      
+      // Force recalculation of statistics after hive deletion
+      console.log('Hive deleted, active hives count:', updatedState.hives.filter(h => !h.isDeleted).length);
+      
+      return updatedState;
+    });
   }, [updateState]);
 
   // Inspection management
@@ -219,17 +226,62 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   }, [state.hives]);
 
   const getHiveCountByYear = useCallback((year: number) => {
-    return (state.hives || []).filter(hive => {
+    // For current year, just count active hives
+    const currentYear = new Date().getFullYear();
+    if (year === currentYear) {
+      const count = (state.hives || []).filter(hive => !hive.isDeleted).length;
+      console.log(`getHiveCountByYear(${year}) - current year, active hives:`, count);
+      return count;
+    }
+    
+    // For past years, count hives that existed during that year
+    const count = (state.hives || []).filter(hive => {
       const createdYear = new Date(hive.createdAt).getFullYear();
-      const isCreatedByYear = createdYear <= year;
+      const wasCreatedByYear = createdYear <= year;
+      
+      if (!wasCreatedByYear) {
+        return false; // Hive didn't exist yet
+      }
       
       if (hive.isDeleted && hive.deletedAt) {
         const deletedYear = new Date(hive.deletedAt).getFullYear();
-        return isCreatedByYear && deletedYear > year;
+        // Hive existed during the year if it was deleted after the year
+        return deletedYear > year;
       }
       
-      return isCreatedByYear && !hive.isDeleted;
+      // Hive is still active and existed during the year
+      return true;
     }).length;
+    
+    console.log(`getHiveCountByYear(${year}):`, count);
+    console.log('Hives analysis:', (state.hives || []).map(hive => ({
+      id: hive.id,
+      name: hive.name,
+      createdYear: new Date(hive.createdAt).getFullYear(),
+      isDeleted: hive.isDeleted,
+      deletedYear: hive.deletedAt ? new Date(hive.deletedAt).getFullYear() : null,
+      includeInYear: (() => {
+        if (year === currentYear) {
+          return !hive.isDeleted;
+        }
+        
+        const createdYear = new Date(hive.createdAt).getFullYear();
+        const wasCreatedByYear = createdYear <= year;
+        
+        if (!wasCreatedByYear) {
+          return false;
+        }
+        
+        if (hive.isDeleted && hive.deletedAt) {
+          const deletedYear = new Date(hive.deletedAt).getFullYear();
+          return deletedYear > year;
+        }
+        
+        return true;
+      })()
+    })));
+    
+    return count;
   }, [state.hives]);
 
   // Statistics calculation and management

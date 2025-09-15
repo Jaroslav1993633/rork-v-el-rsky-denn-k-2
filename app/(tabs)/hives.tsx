@@ -32,6 +32,11 @@ export default function HivesScreen() {
 
   // Filter out deleted hives
   const activeHives = hives.filter(hive => !hive.isDeleted);
+  
+  // Debug logging
+  console.log('Hives screen - Total hives:', hives.length);
+  console.log('Hives screen - Active hives:', activeHives.length);
+  console.log('Hives screen - Hives data:', hives.map(h => ({ id: h.id, name: h.name, isDeleted: h.isDeleted })));
 
   const renderHiveItem = ({ item }: { item: Hive }) => (
     <TouchableOpacity 
