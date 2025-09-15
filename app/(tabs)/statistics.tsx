@@ -24,6 +24,8 @@ export default function StatisticsScreen() {
     resetMonthlyStats,
     resetYearlyStats,
     getHistoricalStats,
+    getActiveHiveCount,
+    getHiveCountByYear,
   } = useBeekeeping();
   const insets = useSafeAreaInsets();
   
@@ -38,7 +40,8 @@ export default function StatisticsScreen() {
   const thisMonthInspections = getThisMonthInspections();
   const thisYearYield = getThisYearYield();
   const activeHives = hives.filter(hive => !hive.isDeleted);
-  const averageInspectionsPerHive = activeHives.length > 0 ? (inspections.length / activeHives.length).toFixed(1) : '0';
+  const activeHiveCount = getActiveHiveCount();
+  const averageInspectionsPerHive = activeHiveCount > 0 ? (inspections.length / activeHiveCount).toFixed(1) : '0';
   
   const monthNames = [
     'Január', 'Február', 'Marec', 'Apríl', 'Máj', 'Jún',
@@ -181,19 +184,7 @@ export default function StatisticsScreen() {
     ).length;
   };
   
-  const getHiveCountByYear = (year: number) => {
-    return hives.filter(hive => {
-      const createdYear = new Date(hive.createdAt).getFullYear();
-      const isCreatedByYear = createdYear <= year;
-      
-      if (hive.isDeleted && hive.deletedAt) {
-        const deletedYear = new Date(hive.deletedAt).getFullYear();
-        return isCreatedByYear && deletedYear > year;
-      }
-      
-      return isCreatedByYear && !hive.isDeleted;
-    }).length;
-  };
+
   const yieldTypeLabels = {
     med: 'Med',
     pel: 'Peľ',

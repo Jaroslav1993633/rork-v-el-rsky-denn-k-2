@@ -18,6 +18,7 @@ export default function RemindersScreen() {
   const { tasks, hives, updateTask, addTask, deleteTask } = useBeekeeping();
   const insets = useSafeAreaInsets();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskDate, setNewTaskDate] = useState('');
@@ -48,7 +49,7 @@ export default function RemindersScreen() {
     updateTask(taskId, { completed: !completed });
   };
 
-  const handleAddTask = () => {
+  const handleSaveTask = () => {
     if (!newTaskTitle.trim() || !newTaskDate.trim() || !selectedHiveId) {
       Alert.alert('Chyba', 'Vyplňte všetky povinné polia');
       return;
@@ -79,19 +80,47 @@ export default function RemindersScreen() {
       return;
     }
 
-    addTask({
-      title: newTaskTitle.trim(),
-      description: newTaskDescription.trim(),
-      dueDate: dueDate.toISOString(),
-      hiveId: selectedHiveId,
-      completed: false,
-    });
+    if (editingTask) {
+      updateTask(editingTask.id, {
+        title: newTaskTitle.trim(),
+        description: newTaskDescription.trim(),
+        dueDate: dueDate.toISOString(),
+        hiveId: selectedHiveId,
+      });
+    } else {
+      addTask({
+        title: newTaskTitle.trim(),
+        description: newTaskDescription.trim(),
+        dueDate: dueDate.toISOString(),
+        hiveId: selectedHiveId,
+        completed: false,
+      });
+    }
 
+    resetForm();
+  };
+
+  const resetForm = () => {
     setNewTaskTitle('');
     setNewTaskDescription('');
     setNewTaskDate('');
     setSelectedHiveId('');
+    setEditingTask(null);
     setShowAddModal(false);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setNewTaskTitle(task.title);
+    setNewTaskDescription(task.description || '');
+    setSelectedHiveId(task.hiveId);
+    
+    // Format date to DD.MM.YYYY
+    const date = new Date(task.dueDate);
+    const formattedDate = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
+    setNewTaskDate(formattedDate);
+    
+    setShowAddModal(true);
   };
 
   const handleDeleteTask = (taskId: string, taskTitle: string) => {
@@ -127,15 +156,20 @@ export default function RemindersScreen() {
               )}
             </View>
             <View style={styles.taskInfo}>
-              <Text style={[
-                styles.taskTitle,
-                item.completed && styles.completedText,
-              ]}>
-                {item.title}
-              </Text>
-              <Text style={styles.taskHive}>
-                {getHiveName(item.hiveId)}
-              </Text>
+              <TouchableOpacity
+                onPress={() => !item.completed && handleEditTask(item)}
+                disabled={item.completed}
+              >
+                <Text style={[
+                  styles.taskTitle,
+                  item.completed && styles.completedText,
+                ]}>
+                  {item.title}
+                </Text>
+                <Text style={styles.taskHive}>
+                  {getHiveName(item.hiveId)}
+                </Text>
+              </TouchableOpacity>
             </View>
           </TouchableOpacity>
           
@@ -236,10 +270,12 @@ export default function RemindersScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Nová úloha</Text>
+            <Text style={styles.modalTitle}>
+              {editingTask ? 'Upraviť úlohu' : 'Nová úloha'}
+            </Text>
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={() => setShowAddModal(false)}
+              onPress={resetForm}
             >
               <X color="#6b7280" size={24} />
             </TouchableOpacity>
@@ -260,7 +296,7 @@ export default function RemindersScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Úľ *</Text>
               <View style={styles.pickerContainer}>
-                {hives.map((hive) => (
+                {hives.filter(hive => !hive.isDeleted).map((hive) => (
                   <TouchableOpacity
                     key={hive.id}
                     style={[
@@ -307,9 +343,11 @@ export default function RemindersScreen() {
 
             <TouchableOpacity
               style={styles.addButton}
-              onPress={handleAddTask}
+              onPress={handleSaveTask}
             >
-              <Text style={styles.addButtonText}>Pridať úlohu</Text>
+              <Text style={styles.addButtonText}>
+                {editingTask ? 'Uložiť zmeny' : 'Pridať úlohu'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
