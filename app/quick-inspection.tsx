@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { router } from 'expo-router';
-import { X, Check, Hexagon } from 'lucide-react-native';
+import { X, Check } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -56,30 +56,29 @@ export default function QuickInspectionScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Vyberte úľ</Text>
-          <View style={styles.hivesGrid}>
+          <View style={styles.hivesCompactGrid}>
             {hives.map((hive) => (
               <TouchableOpacity
                 key={hive.id}
                 style={[
-                  styles.hiveCard,
-                  selectedHiveId === hive.id && styles.selectedHiveCard
+                  styles.compactHiveItem,
+                  selectedHiveId === hive.id && styles.selectedCompactHiveItem
                 ]}
                 onPress={() => setSelectedHiveId(hive.id)}
               >
-                <View style={styles.hiveHeader}>
-                  <Hexagon 
-                    color={selectedHiveId === hive.id ? '#22c55e' : '#6b7280'} 
-                    size={20} 
-                  />
-                  <Text style={[
-                    styles.hiveName,
-                    selectedHiveId === hive.id && styles.selectedHiveName
-                  ]}>
-                    {hive.name}
-                  </Text>
+                <View style={[
+                  styles.checkbox,
+                  selectedHiveId === hive.id && styles.selectedCheckbox
+                ]}>
+                  {selectedHiveId === hive.id && (
+                    <Check color="#ffffff" size={12} />
+                  )}
                 </View>
-                <Text style={styles.hiveDetails}>
-                  {hive.frameCount} rámikov • {hive.queenColor || 'Neoznačená matka'}
+                <Text style={[
+                  styles.compactHiveName,
+                  selectedHiveId === hive.id && styles.selectedCompactHiveName
+                ]}>
+                  {hive.name}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -140,37 +139,50 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 16,
   },
-  hivesGrid: {
-    gap: 12,
+  hivesCompactGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  hiveCard: {
-    backgroundColor: '#f9fafb',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-  },
-  selectedHiveCard: {
-    borderColor: '#22c55e',
-    backgroundColor: '#f0fdf4',
-  },
-  hiveHeader: {
+  compactHiveItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    backgroundColor: '#f9fafb',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    minWidth: 80,
   },
-  hiveName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+  selectedCompactHiveItem: {
+    backgroundColor: '#f0fdf4',
+    borderColor: '#22c55e',
   },
-  selectedHiveName: {
-    color: '#22c55e',
+  checkbox: {
+    width: 16,
+    height: 16,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  hiveDetails: {
+  selectedCheckbox: {
+    backgroundColor: '#22c55e',
+    borderColor: '#22c55e',
+  },
+  compactHiveName: {
     fontSize: 14,
-    color: '#6b7280',
+    fontWeight: '500',
+    color: '#374151',
+    flex: 1,
+  },
+  selectedCompactHiveName: {
+    color: '#22c55e',
+    fontWeight: '600',
   },
   notesInput: {
     backgroundColor: '#f9fafb',
