@@ -15,6 +15,7 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerBackTitle: "Späť" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+      <Stack.Screen name="quick-inspection" options={{ presentation: "modal" }} />
       <Stack.Screen name="hive/[id]" options={{ headerShown: false }} />
     </Stack>
   );

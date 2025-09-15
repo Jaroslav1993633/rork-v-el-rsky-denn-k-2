@@ -116,7 +116,7 @@ export default function DashboardScreen() {
             />
             <QuickAction
               title="Prehliadka úľa"
-              onPress={() => router.push('/hives')}
+              onPress={() => router.push('/quick-inspection')}
               icon={Eye}
               color="#3b82f6"
             />
