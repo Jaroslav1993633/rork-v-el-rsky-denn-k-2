@@ -36,11 +36,27 @@ export interface Yield {
   notes?: string;
 }
 
+export interface MonthlyStats {
+  year: number;
+  month: number;
+  inspectionCount: number;
+  yieldAmount: number;
+}
+
+export interface YearlyStats {
+  year: number;
+  totalInspections: number;
+  totalYield: number;
+  monthlyBreakdown: MonthlyStats[];
+}
+
 export interface AppState {
   hives: Hive[];
   inspections: Inspection[];
   tasks: Task[];
   yields: Yield[];
+  monthlyStats: MonthlyStats[];
+  yearlyStats: YearlyStats[];
   trialStartDate: string | null;
   isRegistered: boolean;
 }

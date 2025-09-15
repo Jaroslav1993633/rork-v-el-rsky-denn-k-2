@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { AppState, Hive, Inspection, Task, Yield } from '@/types/beekeeping';
+import type { AppState, Hive, Inspection, Task, Yield, MonthlyStats, YearlyStats } from '@/types/beekeeping';
 import { sampleHives, sampleInspections, sampleTasks, sampleYields } from '@/mocks/sample-data';
 
 const STORAGE_KEY = 'beekeeping_data';
@@ -12,6 +12,8 @@ const initialState: AppState = {
   inspections: [],
   tasks: [],
   yields: [],
+  monthlyStats: [],
+  yearlyStats: [],
   trialStartDate: null,
   isRegistered: false,
 };
@@ -42,6 +44,8 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
           inspections: sampleInspections,
           tasks: sampleTasks,
           yields: sampleYields,
+          monthlyStats: [],
+          yearlyStats: [],
           trialStartDate: new Date().toISOString(),
         };
         setState(newState);
@@ -204,6 +208,166 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     return state.tasks.filter(task => !task.completed && new Date(task.dueDate) >= new Date());
   }, [state.tasks]);
 
+  // Statistics calculation and management
+  const calculateMonthlyStats = useCallback((year: number, month: number): MonthlyStats => {
+    const inspectionCount = state.inspections.filter(inspection => {
+      const date = new Date(inspection.date);
+      return date.getFullYear() === year && date.getMonth() === month;
+    }).length;
+
+    const yieldAmount = state.yields
+      .filter(yieldItem => {
+        const date = new Date(yieldItem.date);
+        return date.getFullYear() === year && date.getMonth() === month;
+      })
+      .reduce((total, yieldItem) => total + yieldItem.amount, 0);
+
+    return {
+      year,
+      month,
+      inspectionCount,
+      yieldAmount,
+    };
+  }, [state.inspections, state.yields]);
+
+  const updateMonthlyStats = useCallback(() => {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+    
+    const existingStatIndex = state.monthlyStats.findIndex(
+      stat => stat.year === currentYear && stat.month === currentMonth
+    );
+    
+    const newMonthlyStats = calculateMonthlyStats(currentYear, currentMonth);
+    
+    let updatedMonthlyStats: MonthlyStats[];
+    if (existingStatIndex >= 0) {
+      updatedMonthlyStats = [...state.monthlyStats];
+      updatedMonthlyStats[existingStatIndex] = newMonthlyStats;
+    } else {
+      updatedMonthlyStats = [...state.monthlyStats, newMonthlyStats];
+    }
+    
+    updateState({ monthlyStats: updatedMonthlyStats });
+  }, [state.monthlyStats, calculateMonthlyStats, updateState]);
+
+  const updateYearlyStats = useCallback(() => {
+    const currentYear = new Date().getFullYear();
+    
+    const yearInspections = state.inspections.filter(inspection => 
+      new Date(inspection.date).getFullYear() === currentYear
+    ).length;
+    
+    const yearYield = state.yields
+      .filter(yieldItem => new Date(yieldItem.date).getFullYear() === currentYear)
+      .reduce((total, yieldItem) => total + yieldItem.amount, 0);
+    
+    const monthlyBreakdown: MonthlyStats[] = [];
+    for (let month = 0; month < 12; month++) {
+      monthlyBreakdown.push(calculateMonthlyStats(currentYear, month));
+    }
+    
+    const newYearlyStats: YearlyStats = {
+      year: currentYear,
+      totalInspections: yearInspections,
+      totalYield: yearYield,
+      monthlyBreakdown,
+    };
+    
+    const existingYearIndex = state.yearlyStats.findIndex(
+      stat => stat.year === currentYear
+    );
+    
+    let updatedYearlyStats: YearlyStats[];
+    if (existingYearIndex >= 0) {
+      updatedYearlyStats = [...state.yearlyStats];
+      updatedYearlyStats[existingYearIndex] = newYearlyStats;
+    } else {
+      updatedYearlyStats = [...state.yearlyStats, newYearlyStats];
+    }
+    
+    updateState({ yearlyStats: updatedYearlyStats });
+  }, [state.inspections, state.yields, state.yearlyStats, calculateMonthlyStats, updateState]);
+
+  const resetMonthlyStats = useCallback(() => {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+    
+    const resetStats: MonthlyStats = {
+      year: currentYear,
+      month: currentMonth,
+      inspectionCount: 0,
+      yieldAmount: 0,
+    };
+    
+    const existingStatIndex = state.monthlyStats.findIndex(
+      stat => stat.year === currentYear && stat.month === currentMonth
+    );
+    
+    let updatedMonthlyStats: MonthlyStats[];
+    if (existingStatIndex >= 0) {
+      updatedMonthlyStats = [...state.monthlyStats];
+      updatedMonthlyStats[existingStatIndex] = resetStats;
+    } else {
+      updatedMonthlyStats = [...state.monthlyStats, resetStats];
+    }
+    
+    updateState({ monthlyStats: updatedMonthlyStats });
+  }, [state.monthlyStats, updateState]);
+
+  const resetYearlyStats = useCallback(() => {
+    const currentYear = new Date().getFullYear();
+    
+    const resetStats: YearlyStats = {
+      year: currentYear,
+      totalInspections: 0,
+      totalYield: 0,
+      monthlyBreakdown: Array.from({ length: 12 }, (_, month) => ({
+        year: currentYear,
+        month,
+        inspectionCount: 0,
+        yieldAmount: 0,
+      })),
+    };
+    
+    const existingYearIndex = state.yearlyStats.findIndex(
+      stat => stat.year === currentYear
+    );
+    
+    let updatedYearlyStats: YearlyStats[];
+    if (existingYearIndex >= 0) {
+      updatedYearlyStats = [...state.yearlyStats];
+      updatedYearlyStats[existingYearIndex] = resetStats;
+    } else {
+      updatedYearlyStats = [...state.yearlyStats, resetStats];
+    }
+    
+    updateState({ yearlyStats: updatedYearlyStats });
+  }, [state.yearlyStats, updateState]);
+
+  const getHistoricalStats = useCallback((year?: number, month?: number) => {
+    if (year && month !== undefined) {
+      return state.monthlyStats.find(stat => stat.year === year && stat.month === month);
+    }
+    if (year) {
+      return state.yearlyStats.find(stat => stat.year === year);
+    }
+    return {
+      monthlyStats: state.monthlyStats,
+      yearlyStats: state.yearlyStats,
+    };
+  }, [state.monthlyStats, state.yearlyStats]);
+
+  // Auto-update stats when data changes
+  useEffect(() => {
+    if (!isLoading) {
+      updateMonthlyStats();
+      updateYearlyStats();
+    }
+  }, [state.inspections, state.yields, isLoading, updateMonthlyStats, updateYearlyStats]);
+
   return useMemo(() => ({
     ...state,
     isLoading,
@@ -236,6 +400,14 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     getThisMonthInspections,
     getThisYearYield,
     getPendingTasks,
+    
+    // Advanced statistics
+    calculateMonthlyStats,
+    updateMonthlyStats,
+    updateYearlyStats,
+    resetMonthlyStats,
+    resetYearlyStats,
+    getHistoricalStats,
   }), [
     state,
     isLoading,
@@ -256,5 +428,11 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     getThisMonthInspections,
     getThisYearYield,
     getPendingTasks,
+    calculateMonthlyStats,
+    updateMonthlyStats,
+    updateYearlyStats,
+    resetMonthlyStats,
+    resetYearlyStats,
+    getHistoricalStats,
   ]);
 });
