@@ -228,33 +228,34 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   const getHiveCountByYear = useCallback((year: number) => {
     const currentYear = new Date().getFullYear();
     
-    // Always count hives that existed during the specified year
+    // For current year, only count active (non-deleted) hives
+    if (year === currentYear) {
+      const activeCount = (state.hives || []).filter(hive => !hive.isDeleted).length;
+      console.log(`getHiveCountByYear(${year}) - current year active hives:`, activeCount);
+      return activeCount;
+    }
+    
+    // For past years, count hives that existed during that year
     const count = (state.hives || []).filter(hive => {
       const createdYear = new Date(hive.createdAt).getFullYear();
-      const wasCreatedByYear = createdYear <= year;
       
-      if (!wasCreatedByYear) {
+      // Hive must have been created by or during the specified year
+      if (createdYear > year) {
         return false; // Hive didn't exist yet
       }
       
-      // For current year, exclude deleted hives
-      if (year === currentYear && hive.isDeleted) {
-        return false;
-      }
-      
-      // For past years, include hive if it wasn't deleted during that year
-      if (year < currentYear && hive.isDeleted && hive.deletedAt) {
+      // If hive is deleted, check if it was deleted after the specified year
+      if (hive.isDeleted && hive.deletedAt) {
         const deletedYear = new Date(hive.deletedAt).getFullYear();
         // Hive existed during the year if it was deleted after the year
         return deletedYear > year;
       }
       
-      // Hive existed during the year
+      // Hive existed during the year (not deleted or deleted later)
       return true;
     }).length;
     
-    console.log(`getHiveCountByYear(${year}):`, count);
-    console.log('Active hives (not deleted):', (state.hives || []).filter(h => !h.isDeleted).length);
+    console.log(`getHiveCountByYear(${year}) - past year count:`, count);
     
     return count;
   }, [state.hives]);
