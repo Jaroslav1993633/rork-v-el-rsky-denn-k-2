@@ -79,9 +79,14 @@ export default function HiveDetailScreen() {
   const [newTaskDate, setNewTaskDate] = useState('');
   const [newYieldAmount, setNewYieldAmount] = useState('');
   const [newYieldType, setNewYieldType] = useState<'med' | 'pel' | 'propolis' | 'ine'>('med');
+  const [newYieldDate, setNewYieldDate] = useState('');
   const [showAddInspection, setShowAddInspection] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [showAddYield, setShowAddYield] = useState(false);
+  const [editingYieldId, setEditingYieldId] = useState<string | null>(null);
+  const [editYieldAmount, setEditYieldAmount] = useState('');
+  const [editYieldType, setEditYieldType] = useState<'med' | 'pel' | 'propolis' | 'ine'>('med');
+  const [editYieldDate, setEditYieldDate] = useState('');
 
   const hive = hives.find(h => h.id === id);
   const hiveInspections = inspections.filter(i => i.hiveId === id).sort((a, b) => 
@@ -263,15 +268,97 @@ export default function HiveDetailScreen() {
       return;
     }
 
+    let yieldDate = new Date();
+    if (newYieldDate.trim()) {
+      const dateParts = newYieldDate.trim().split('.');
+      if (dateParts.length === 3) {
+        const day = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10) - 1;
+        const year = parseInt(dateParts[2], 10);
+        
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year) && 
+            day >= 1 && day <= 31 && month >= 0 && month <= 11 && year >= 2020) {
+          const customDate = new Date(year, month, day, 12, 0, 0);
+          if (!isNaN(customDate.getTime()) && 
+              customDate.getDate() === day && 
+              customDate.getMonth() === month && 
+              customDate.getFullYear() === year) {
+            yieldDate = customDate;
+          }
+        }
+      }
+    }
+
     addYield({
       hiveId: hive.id,
       type: newYieldType,
       amount: amount,
       unit: 'kg',
-      date: new Date().toISOString(),
+      date: yieldDate.toISOString(),
     });
     setNewYieldAmount('');
+    setNewYieldDate('');
     setShowAddYield(false);
+  };
+
+  const handleEditYield = (yieldItem: any) => {
+    setEditingYieldId(yieldItem.id);
+    setEditYieldAmount(yieldItem.amount.toString());
+    setEditYieldType(yieldItem.type);
+    
+    const yieldDate = new Date(yieldItem.date);
+    const formattedDate = `${yieldDate.getDate().toString().padStart(2, '0')}.${(yieldDate.getMonth() + 1).toString().padStart(2, '0')}.${yieldDate.getFullYear()}`;
+    setEditYieldDate(formattedDate);
+  };
+
+  const handleSaveYieldEdit = () => {
+    const amount = parseFloat(editYieldAmount);
+    if (isNaN(amount) || amount <= 0) {
+      if (Platform.OS === 'web') {
+        alert('Zadajte platné množstvo');
+      }
+      return;
+    }
+
+    let yieldDate = new Date();
+    if (editYieldDate.trim()) {
+      const dateParts = editYieldDate.trim().split('.');
+      if (dateParts.length === 3) {
+        const day = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10) - 1;
+        const year = parseInt(dateParts[2], 10);
+        
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year) && 
+            day >= 1 && day <= 31 && month >= 0 && month <= 11 && year >= 2020) {
+          const customDate = new Date(year, month, day, 12, 0, 0);
+          if (!isNaN(customDate.getTime()) && 
+              customDate.getDate() === day && 
+              customDate.getMonth() === month && 
+              customDate.getFullYear() === year) {
+            yieldDate = customDate;
+          }
+        }
+      }
+    }
+
+    if (editingYieldId) {
+      updateYield(editingYieldId, {
+        type: editYieldType,
+        amount: amount,
+        date: yieldDate.toISOString(),
+      });
+      setEditingYieldId(null);
+      setEditYieldAmount('');
+      setEditYieldType('med');
+      setEditYieldDate('');
+    }
+  };
+
+  const handleCancelYieldEdit = () => {
+    setEditingYieldId(null);
+    setEditYieldAmount('');
+    setEditYieldType('med');
+    setEditYieldDate('');
   };
 
   const formatDate = (dateString: string) => {
@@ -634,12 +721,20 @@ export default function HiveDetailScreen() {
                 placeholder="Množstvo (kg)"
                 keyboardType="numeric"
               />
+              <TextInput
+                style={styles.input}
+                value={newYieldDate}
+                onChangeText={setNewYieldDate}
+                placeholder="Dátum (DD.MM.YYYY) - nechajte prázdne pre dnešný dátum"
+                keyboardType="numeric"
+              />
               <View style={styles.formActions}>
                 <TouchableOpacity 
                   style={styles.cancelButton}
                   onPress={() => {
                     setShowAddYield(false);
                     setNewYieldAmount('');
+                    setNewYieldDate('');
                   }}
                 >
                   <Text style={styles.cancelButtonText}>Zrušiť</Text>
@@ -656,20 +751,82 @@ export default function HiveDetailScreen() {
           
           {hiveYields.map((yieldItem) => (
             <View key={yieldItem.id} style={styles.listItem}>
-              <View style={styles.listItemHeader}>
-                <Text style={styles.listItemTitle}>
-                  {yieldItem.type === 'med' ? 'Med' : 
-                   yieldItem.type === 'pel' ? 'Peľ' : 
-                   yieldItem.type === 'propolis' ? 'Propolis' : 'Iné'}
-                </Text>
-                <TouchableOpacity 
-                  onPress={() => deleteYield(yieldItem.id)}
-                >
-                  <Trash2 color="#ef4444" size={16} />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.listItemDate}>{formatDate(yieldItem.date)}</Text>
-              <Text style={styles.yieldAmount}>{yieldItem.amount} {yieldItem.unit}</Text>
+              {editingYieldId === yieldItem.id ? (
+                <View style={styles.editYieldForm}>
+                  <View style={styles.yieldTypeSelector}>
+                    {(['med', 'pel', 'propolis', 'ine'] as const).map((type) => (
+                      <TouchableOpacity
+                        key={type}
+                        style={[
+                          styles.yieldTypeOption,
+                          editYieldType === type && styles.selectedYieldType,
+                        ]}
+                        onPress={() => setEditYieldType(type)}
+                      >
+                        <Text style={[
+                          styles.yieldTypeText,
+                          editYieldType === type && styles.selectedYieldTypeText,
+                        ]}>
+                          {type === 'med' ? 'Med' : type === 'pel' ? 'Peľ' : type === 'propolis' ? 'Propolis' : 'Iné'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    value={editYieldAmount}
+                    onChangeText={setEditYieldAmount}
+                    placeholder="Množstvo (kg)"
+                    keyboardType="numeric"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={editYieldDate}
+                    onChangeText={setEditYieldDate}
+                    placeholder="Dátum (DD.MM.YYYY)"
+                    keyboardType="numeric"
+                  />
+                  <View style={styles.formActions}>
+                    <TouchableOpacity 
+                      style={styles.cancelButton}
+                      onPress={handleCancelYieldEdit}
+                    >
+                      <Text style={styles.cancelButtonText}>Zrušiť</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.saveFormButton}
+                      onPress={handleSaveYieldEdit}
+                    >
+                      <Text style={styles.saveButtonText}>Uložiť</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.listItemHeader}>
+                    <Text style={styles.listItemTitle}>
+                      {yieldItem.type === 'med' ? 'Med' : 
+                       yieldItem.type === 'pel' ? 'Peľ' : 
+                       yieldItem.type === 'propolis' ? 'Propolis' : 'Iné'}
+                    </Text>
+                    <View style={styles.yieldActions}>
+                      <TouchableOpacity 
+                        onPress={() => handleEditYield(yieldItem)}
+                        style={styles.editYieldButton}
+                      >
+                        <Edit3 color="#3b82f6" size={16} />
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => deleteYield(yieldItem.id)}
+                      >
+                        <Trash2 color="#ef4444" size={16} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <Text style={styles.listItemDate}>{formatDate(yieldItem.date)}</Text>
+                  <Text style={styles.yieldAmount}>{yieldItem.amount} {yieldItem.unit}</Text>
+                </>
+              )}
             </View>
           ))}
           
@@ -1066,5 +1223,16 @@ const styles = StyleSheet.create({
   },
   selectedColorText: {
     color: '#ffffff',
+  },
+  yieldActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editYieldButton: {
+    padding: 2,
+  },
+  editYieldForm: {
+    gap: 12,
   },
 });
