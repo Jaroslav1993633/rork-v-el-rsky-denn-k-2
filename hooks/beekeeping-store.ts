@@ -49,18 +49,22 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
           trialStartDate: new Date().toISOString(),
         };
         setState(newState);
-        await saveData(newState);
+        try {
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+        } catch (saveError) {
+          console.error('Error saving initial data:', saveError);
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [saveData]);
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, []);
 
   const updateState = useCallback((updates: Partial<AppState> | ((prevState: AppState) => Partial<AppState>)) => {
     setState(prevState => {
