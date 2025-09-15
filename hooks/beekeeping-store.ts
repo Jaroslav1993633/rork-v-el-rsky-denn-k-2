@@ -78,12 +78,12 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
     };
-    updateState(prevState => ({ hives: [...prevState.hives, newHive] }));
+    updateState(prevState => ({ hives: [...(prevState.hives || []), newHive] }));
   }, [updateState]);
 
   const updateHive = useCallback((id: string, updates: Partial<Hive>) => {
     updateState(prevState => ({
-      hives: prevState.hives.map(hive =>
+      hives: (prevState.hives || []).map(hive =>
         hive.id === id ? { ...hive, ...updates } : hive
       )
     }));
@@ -91,10 +91,10 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
 
   const deleteHive = useCallback((id: string) => {
     updateState(prevState => ({
-      hives: prevState.hives.filter(hive => hive.id !== id),
-      inspections: prevState.inspections.filter(inspection => inspection.hiveId !== id),
-      tasks: prevState.tasks.filter(task => task.hiveId !== id),
-      yields: prevState.yields.filter(yieldItem => yieldItem.hiveId !== id),
+      hives: (prevState.hives || []).filter(hive => hive.id !== id),
+      inspections: (prevState.inspections || []).filter(inspection => inspection.hiveId !== id),
+      tasks: (prevState.tasks || []).filter(task => task.hiveId !== id),
+      yields: (prevState.yields || []).filter(yieldItem => yieldItem.hiveId !== id),
     }));
   }, [updateState]);
 
@@ -105,12 +105,12 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
     };
-    updateState(prevState => ({ inspections: [...prevState.inspections, newInspection] }));
+    updateState(prevState => ({ inspections: [...(prevState.inspections || []), newInspection] }));
   }, [updateState]);
 
   const updateInspection = useCallback((id: string, updates: Partial<Inspection>) => {
     updateState(prevState => ({
-      inspections: prevState.inspections.map(inspection =>
+      inspections: (prevState.inspections || []).map(inspection =>
         inspection.id === id ? { ...inspection, ...updates } : inspection
       )
     }));
@@ -118,7 +118,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
 
   const deleteInspection = useCallback((id: string) => {
     updateState(prevState => ({
-      inspections: prevState.inspections.filter(inspection => inspection.id !== id)
+      inspections: (prevState.inspections || []).filter(inspection => inspection.id !== id)
     }));
   }, [updateState]);
 
@@ -129,12 +129,12 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
     };
-    updateState(prevState => ({ tasks: [...prevState.tasks, newTask] }));
+    updateState(prevState => ({ tasks: [...(prevState.tasks || []), newTask] }));
   }, [updateState]);
 
   const updateTask = useCallback((id: string, updates: Partial<Task>) => {
     updateState(prevState => ({
-      tasks: prevState.tasks.map(task =>
+      tasks: (prevState.tasks || []).map(task =>
         task.id === id ? { ...task, ...updates } : task
       )
     }));
@@ -142,7 +142,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
 
   const deleteTask = useCallback((id: string) => {
     updateState(prevState => ({
-      tasks: prevState.tasks.filter(task => task.id !== id)
+      tasks: (prevState.tasks || []).filter(task => task.id !== id)
     }));
   }, [updateState]);
 
@@ -152,12 +152,12 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       ...yieldData,
       id: Date.now().toString(),
     };
-    updateState(prevState => ({ yields: [...prevState.yields, newYield] }));
+    updateState(prevState => ({ yields: [...(prevState.yields || []), newYield] }));
   }, [updateState]);
 
   const updateYield = useCallback((id: string, updates: Partial<Yield>) => {
     updateState(prevState => ({
-      yields: prevState.yields.map(yieldItem =>
+      yields: (prevState.yields || []).map(yieldItem =>
         yieldItem.id === id ? { ...yieldItem, ...updates } : yieldItem
       )
     }));
@@ -165,7 +165,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
 
   const deleteYield = useCallback((id: string) => {
     updateState(prevState => ({
-      yields: prevState.yields.filter(yieldItem => yieldItem.id !== id)
+      yields: (prevState.yields || []).filter(yieldItem => yieldItem.id !== id)
     }));
   }, [updateState]);
 
@@ -190,7 +190,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
     
-    return state.inspections.filter(inspection => {
+    return (state.inspections || []).filter(inspection => {
       const inspectionDate = new Date(inspection.date);
       return inspectionDate.getMonth() === currentMonth && inspectionDate.getFullYear() === currentYear;
     }).length;
@@ -199,23 +199,23 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   const getThisYearYield = useCallback(() => {
     const currentYear = new Date().getFullYear();
     
-    return state.yields
+    return (state.yields || [])
       .filter(yieldItem => new Date(yieldItem.date).getFullYear() === currentYear)
       .reduce((total, yieldItem) => total + yieldItem.amount, 0);
   }, [state.yields]);
 
   const getPendingTasks = useCallback(() => {
-    return state.tasks.filter(task => !task.completed && new Date(task.dueDate) >= new Date());
+    return (state.tasks || []).filter(task => !task.completed && new Date(task.dueDate) >= new Date());
   }, [state.tasks]);
 
   // Statistics calculation and management
   const calculateMonthlyStats = useCallback((year: number, month: number): MonthlyStats => {
-    const inspectionCount = state.inspections.filter(inspection => {
+    const inspectionCount = (state.inspections || []).filter(inspection => {
       const date = new Date(inspection.date);
       return date.getFullYear() === year && date.getMonth() === month;
     }).length;
 
-    const yieldAmount = state.yields
+    const yieldAmount = (state.yields || [])
       .filter(yieldItem => {
         const date = new Date(yieldItem.date);
         return date.getFullYear() === year && date.getMonth() === month;
@@ -235,7 +235,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth();
     
-    const existingStatIndex = state.monthlyStats.findIndex(
+    const existingStatIndex = (state.monthlyStats || []).findIndex(
       stat => stat.year === currentYear && stat.month === currentMonth
     );
     
@@ -243,10 +243,10 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     
     let updatedMonthlyStats: MonthlyStats[];
     if (existingStatIndex >= 0) {
-      updatedMonthlyStats = [...state.monthlyStats];
+      updatedMonthlyStats = [...(state.monthlyStats || [])];
       updatedMonthlyStats[existingStatIndex] = newMonthlyStats;
     } else {
-      updatedMonthlyStats = [...state.monthlyStats, newMonthlyStats];
+      updatedMonthlyStats = [...(state.monthlyStats || []), newMonthlyStats];
     }
     
     updateState({ monthlyStats: updatedMonthlyStats });
@@ -255,11 +255,11 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   const updateYearlyStats = useCallback(() => {
     const currentYear = new Date().getFullYear();
     
-    const yearInspections = state.inspections.filter(inspection => 
+    const yearInspections = (state.inspections || []).filter(inspection => 
       new Date(inspection.date).getFullYear() === currentYear
     ).length;
     
-    const yearYield = state.yields
+    const yearYield = (state.yields || [])
       .filter(yieldItem => new Date(yieldItem.date).getFullYear() === currentYear)
       .reduce((total, yieldItem) => total + yieldItem.amount, 0);
     
@@ -275,16 +275,16 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       monthlyBreakdown,
     };
     
-    const existingYearIndex = state.yearlyStats.findIndex(
+    const existingYearIndex = (state.yearlyStats || []).findIndex(
       stat => stat.year === currentYear
     );
     
     let updatedYearlyStats: YearlyStats[];
     if (existingYearIndex >= 0) {
-      updatedYearlyStats = [...state.yearlyStats];
+      updatedYearlyStats = [...(state.yearlyStats || [])];
       updatedYearlyStats[existingYearIndex] = newYearlyStats;
     } else {
-      updatedYearlyStats = [...state.yearlyStats, newYearlyStats];
+      updatedYearlyStats = [...(state.yearlyStats || []), newYearlyStats];
     }
     
     updateState({ yearlyStats: updatedYearlyStats });
@@ -302,16 +302,16 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       yieldAmount: 0,
     };
     
-    const existingStatIndex = state.monthlyStats.findIndex(
+    const existingStatIndex = (state.monthlyStats || []).findIndex(
       stat => stat.year === currentYear && stat.month === currentMonth
     );
     
     let updatedMonthlyStats: MonthlyStats[];
     if (existingStatIndex >= 0) {
-      updatedMonthlyStats = [...state.monthlyStats];
+      updatedMonthlyStats = [...(state.monthlyStats || [])];
       updatedMonthlyStats[existingStatIndex] = resetStats;
     } else {
-      updatedMonthlyStats = [...state.monthlyStats, resetStats];
+      updatedMonthlyStats = [...(state.monthlyStats || []), resetStats];
     }
     
     updateState({ monthlyStats: updatedMonthlyStats });
@@ -332,16 +332,16 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       })),
     };
     
-    const existingYearIndex = state.yearlyStats.findIndex(
+    const existingYearIndex = (state.yearlyStats || []).findIndex(
       stat => stat.year === currentYear
     );
     
     let updatedYearlyStats: YearlyStats[];
     if (existingYearIndex >= 0) {
-      updatedYearlyStats = [...state.yearlyStats];
+      updatedYearlyStats = [...(state.yearlyStats || [])];
       updatedYearlyStats[existingYearIndex] = resetStats;
     } else {
-      updatedYearlyStats = [...state.yearlyStats, resetStats];
+      updatedYearlyStats = [...(state.yearlyStats || []), resetStats];
     }
     
     updateState({ yearlyStats: updatedYearlyStats });
@@ -349,14 +349,14 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
 
   const getHistoricalStats = useCallback((year?: number, month?: number) => {
     if (year && month !== undefined) {
-      return state.monthlyStats.find(stat => stat.year === year && stat.month === month);
+      return (state.monthlyStats || []).find(stat => stat.year === year && stat.month === month);
     }
     if (year) {
-      return state.yearlyStats.find(stat => stat.year === year);
+      return (state.yearlyStats || []).find(stat => stat.year === year);
     }
     return {
-      monthlyStats: state.monthlyStats,
-      yearlyStats: state.yearlyStats,
+      monthlyStats: state.monthlyStats || [],
+      yearlyStats: state.yearlyStats || [],
     };
   }, [state.monthlyStats, state.yearlyStats]);
 
