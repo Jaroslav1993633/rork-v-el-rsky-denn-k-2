@@ -226,15 +226,9 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   }, [state.hives]);
 
   const getHiveCountByYear = useCallback((year: number) => {
-    // For current year, just count active hives
     const currentYear = new Date().getFullYear();
-    if (year === currentYear) {
-      const count = (state.hives || []).filter(hive => !hive.isDeleted).length;
-      console.log(`getHiveCountByYear(${year}) - current year, active hives:`, count);
-      return count;
-    }
     
-    // For past years, count hives that existed during that year
+    // Always count hives that existed during the specified year
     const count = (state.hives || []).filter(hive => {
       const createdYear = new Date(hive.createdAt).getFullYear();
       const wasCreatedByYear = createdYear <= year;
@@ -243,43 +237,24 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
         return false; // Hive didn't exist yet
       }
       
-      if (hive.isDeleted && hive.deletedAt) {
+      // For current year, exclude deleted hives
+      if (year === currentYear && hive.isDeleted) {
+        return false;
+      }
+      
+      // For past years, include hive if it wasn't deleted during that year
+      if (year < currentYear && hive.isDeleted && hive.deletedAt) {
         const deletedYear = new Date(hive.deletedAt).getFullYear();
         // Hive existed during the year if it was deleted after the year
         return deletedYear > year;
       }
       
-      // Hive is still active and existed during the year
+      // Hive existed during the year
       return true;
     }).length;
     
     console.log(`getHiveCountByYear(${year}):`, count);
-    console.log('Hives analysis:', (state.hives || []).map(hive => ({
-      id: hive.id,
-      name: hive.name,
-      createdYear: new Date(hive.createdAt).getFullYear(),
-      isDeleted: hive.isDeleted,
-      deletedYear: hive.deletedAt ? new Date(hive.deletedAt).getFullYear() : null,
-      includeInYear: (() => {
-        if (year === currentYear) {
-          return !hive.isDeleted;
-        }
-        
-        const createdYear = new Date(hive.createdAt).getFullYear();
-        const wasCreatedByYear = createdYear <= year;
-        
-        if (!wasCreatedByYear) {
-          return false;
-        }
-        
-        if (hive.isDeleted && hive.deletedAt) {
-          const deletedYear = new Date(hive.deletedAt).getFullYear();
-          return deletedYear > year;
-        }
-        
-        return true;
-      })()
-    })));
+    console.log('Active hives (not deleted):', (state.hives || []).filter(h => !h.isDeleted).length);
     
     return count;
   }, [state.hives]);
