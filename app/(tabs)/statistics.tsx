@@ -267,13 +267,26 @@ export default function StatisticsScreen() {
         </View>
 
         <View style={styles.section}>
-          <TouchableOpacity 
-            style={styles.sectionHeaderClickable}
-            onPress={() => setShowHistorical(!showHistorical)}
-          >
-            <Text style={styles.sectionTitle}>História štatistík</Text>
-            <Text style={styles.sectionSubtitle}>Kliknite pre zobrazenie histórie</Text>
-          </TouchableOpacity>
+          <View style={styles.statsGrid}>
+            <TouchableOpacity 
+              style={styles.statCard}
+              onPress={() => setShowHistorical(!showHistorical)}
+            >
+              <View style={styles.statHeader}>
+                <View style={[styles.statIcon, { backgroundColor: "#ef4444" }]}>
+                  <History color="#ffffff" size={20} />
+                </View>
+                <Text style={styles.statTitle}>História štatistík</Text>
+                {showHistorical ? (
+                  <ChevronUp color="#6b7280" size={16} />
+                ) : (
+                  <ChevronDown color="#6b7280" size={16} />
+                )}
+              </View>
+              <Text style={styles.statValue}>{availableYears.length}</Text>
+              <Text style={styles.statSubtitle}>Dostupných rokov</Text>
+            </TouchableOpacity>
+          </View>
           
           {showHistorical && (
             <View style={styles.historicalSection}>
