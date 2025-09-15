@@ -141,7 +141,18 @@ export default function StatisticsScreen() {
       
     const yieldByHive = filteredYields.reduce((acc, yieldItem) => {
       const hive = hives.find(h => h.id === yieldItem.hiveId);
-      const hiveName = hive ? hive.name : `Úľ ${yieldItem.hiveId}`;
+      let hiveName: string;
+      
+      if (hive) {
+        if (hive.isDeleted && hive.deletedAt) {
+          const deletedDate = new Date(hive.deletedAt).toLocaleDateString('sk-SK');
+          hiveName = `Úľ č. zrušený (${deletedDate})`;
+        } else {
+          hiveName = hive.name;
+        }
+      } else {
+        hiveName = `Úľ ${yieldItem.hiveId}`;
+      }
       
       if (!acc[hiveName]) {
         acc[hiveName] = { total: 0, byType: {} };
@@ -171,7 +182,7 @@ export default function StatisticsScreen() {
   
   const getHiveCountByYear = (year: number) => {
     return hives.filter(hive => 
-      new Date(hive.createdAt).getFullYear() <= year
+      new Date(hive.createdAt).getFullYear() <= year && !hive.isDeleted
     ).length;
   };
   const yieldTypeLabels = {
@@ -319,7 +330,7 @@ export default function StatisticsScreen() {
           <Text style={styles.sectionTitle}>Typy úľov</Text>
           <View style={styles.hiveTypesList}>
             {Object.entries(
-              hives.reduce((acc, hive) => {
+              hives.filter(hive => !hive.isDeleted).reduce((acc, hive) => {
                 const type = hive.type;
                 if (!acc[type]) {
                   acc[type] = 0;
@@ -345,7 +356,7 @@ export default function StatisticsScreen() {
                 </View>
               );
             })}
-            {hives.length === 0 && (
+            {hives.filter(hive => !hive.isDeleted).length === 0 && (
               <View style={styles.emptyHiveTypes}>
                 <Text style={styles.emptyHiveTypesText}>
                   Zatiaľ neboli pridané žiadne úle

@@ -7,6 +7,8 @@ export interface Hive {
   queenColor: string;
   colonyFoundingDate: string;
   createdAt: string;
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 export interface Inspection {
