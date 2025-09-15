@@ -37,7 +37,8 @@ export default function StatisticsScreen() {
 
   const thisMonthInspections = getThisMonthInspections();
   const thisYearYield = getThisYearYield();
-  const averageInspectionsPerHive = hives.length > 0 ? (inspections.length / hives.length).toFixed(1) : '0';
+  const activeHives = hives.filter(hive => !hive.isDeleted);
+  const averageInspectionsPerHive = activeHives.length > 0 ? (inspections.length / activeHives.length).toFixed(1) : '0';
   
   const monthNames = [
     'Január', 'Február', 'Marec', 'Apríl', 'Máj', 'Jún',
