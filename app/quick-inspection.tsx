@@ -20,6 +20,8 @@ export default function QuickInspectionScreen() {
   const [notes, setNotes] = useState<string>('');
 
   const handleSave = () => {
+    console.log('handleSave called', { selectedHiveId, notes: notes.trim() });
+    
     if (!selectedHiveId) {
       Alert.alert('Chyba', 'Prosím vyberte úľ');
       return;
@@ -30,15 +32,28 @@ export default function QuickInspectionScreen() {
       return;
     }
 
-    addInspection({
+    const inspectionData = {
       hiveId: selectedHiveId,
       date: new Date().toISOString(),
       notes: notes.trim(),
-    });
-
-    Alert.alert('Úspech', 'Prehliadka bola pridaná', [
-      { text: 'OK', onPress: () => router.back() }
-    ]);
+    };
+    
+    console.log('Adding inspection:', inspectionData);
+    
+    try {
+      addInspection(inspectionData);
+      console.log('Inspection added successfully');
+      
+      setNotes('');
+      setSelectedHiveId('');
+      
+      Alert.alert('Úspech', 'Prehliadka bola pridaná', [
+        { text: 'OK', onPress: () => router.back() }
+      ]);
+    } catch (error) {
+      console.error('Error adding inspection:', error);
+      Alert.alert('Chyba', 'Nepodarilo sa pridať prehliadku');
+    }
   };
 
   return (

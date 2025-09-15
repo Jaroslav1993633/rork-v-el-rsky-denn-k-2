@@ -58,11 +58,14 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     loadData();
   }, [loadData]);
 
-  const updateState = useCallback((updates: Partial<AppState>) => {
-    const newState = { ...state, ...updates };
-    setState(newState);
-    saveData(newState);
-  }, [state, saveData]);
+  const updateState = useCallback((updates: Partial<AppState> | ((prevState: AppState) => Partial<AppState>)) => {
+    setState(prevState => {
+      const updatesObj = typeof updates === 'function' ? updates(prevState) : updates;
+      const newState = { ...prevState, ...updatesObj };
+      saveData(newState);
+      return newState;
+    });
+  }, [saveData]);
 
   // Hive management
   const addHive = useCallback((hive: Omit<Hive, 'id' | 'createdAt'>) => {
@@ -71,29 +74,25 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
     };
-    updateState({ hives: [...state.hives, newHive] });
-  }, [state.hives, updateState]);
+    updateState(prevState => ({ hives: [...prevState.hives, newHive] }));
+  }, [updateState]);
 
   const updateHive = useCallback((id: string, updates: Partial<Hive>) => {
-    const updatedHives = state.hives.map(hive =>
-      hive.id === id ? { ...hive, ...updates } : hive
-    );
-    updateState({ hives: updatedHives });
-  }, [state.hives, updateState]);
+    updateState(prevState => ({
+      hives: prevState.hives.map(hive =>
+        hive.id === id ? { ...hive, ...updates } : hive
+      )
+    }));
+  }, [updateState]);
 
   const deleteHive = useCallback((id: string) => {
-    const filteredHives = state.hives.filter(hive => hive.id !== id);
-    const filteredInspections = state.inspections.filter(inspection => inspection.hiveId !== id);
-    const filteredTasks = state.tasks.filter(task => task.hiveId !== id);
-    const filteredYields = state.yields.filter(yieldItem => yieldItem.hiveId !== id);
-    
-    updateState({
-      hives: filteredHives,
-      inspections: filteredInspections,
-      tasks: filteredTasks,
-      yields: filteredYields,
-    });
-  }, [state.hives, state.inspections, state.tasks, state.yields, updateState]);
+    updateState(prevState => ({
+      hives: prevState.hives.filter(hive => hive.id !== id),
+      inspections: prevState.inspections.filter(inspection => inspection.hiveId !== id),
+      tasks: prevState.tasks.filter(task => task.hiveId !== id),
+      yields: prevState.yields.filter(yieldItem => yieldItem.hiveId !== id),
+    }));
+  }, [updateState]);
 
   // Inspection management
   const addInspection = useCallback((inspection: Omit<Inspection, 'id' | 'createdAt'>) => {
@@ -102,20 +101,22 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
     };
-    updateState({ inspections: [...state.inspections, newInspection] });
-  }, [state.inspections, updateState]);
+    updateState(prevState => ({ inspections: [...prevState.inspections, newInspection] }));
+  }, [updateState]);
 
   const updateInspection = useCallback((id: string, updates: Partial<Inspection>) => {
-    const updatedInspections = state.inspections.map(inspection =>
-      inspection.id === id ? { ...inspection, ...updates } : inspection
-    );
-    updateState({ inspections: updatedInspections });
-  }, [state.inspections, updateState]);
+    updateState(prevState => ({
+      inspections: prevState.inspections.map(inspection =>
+        inspection.id === id ? { ...inspection, ...updates } : inspection
+      )
+    }));
+  }, [updateState]);
 
   const deleteInspection = useCallback((id: string) => {
-    const filteredInspections = state.inspections.filter(inspection => inspection.id !== id);
-    updateState({ inspections: filteredInspections });
-  }, [state.inspections, updateState]);
+    updateState(prevState => ({
+      inspections: prevState.inspections.filter(inspection => inspection.id !== id)
+    }));
+  }, [updateState]);
 
   // Task management
   const addTask = useCallback((task: Omit<Task, 'id' | 'createdAt'>) => {
@@ -124,20 +125,22 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
     };
-    updateState({ tasks: [...state.tasks, newTask] });
-  }, [state.tasks, updateState]);
+    updateState(prevState => ({ tasks: [...prevState.tasks, newTask] }));
+  }, [updateState]);
 
   const updateTask = useCallback((id: string, updates: Partial<Task>) => {
-    const updatedTasks = state.tasks.map(task =>
-      task.id === id ? { ...task, ...updates } : task
-    );
-    updateState({ tasks: updatedTasks });
-  }, [state.tasks, updateState]);
+    updateState(prevState => ({
+      tasks: prevState.tasks.map(task =>
+        task.id === id ? { ...task, ...updates } : task
+      )
+    }));
+  }, [updateState]);
 
   const deleteTask = useCallback((id: string) => {
-    const filteredTasks = state.tasks.filter(task => task.id !== id);
-    updateState({ tasks: filteredTasks });
-  }, [state.tasks, updateState]);
+    updateState(prevState => ({
+      tasks: prevState.tasks.filter(task => task.id !== id)
+    }));
+  }, [updateState]);
 
   // Yield management
   const addYield = useCallback((yieldData: Omit<Yield, 'id'>) => {
@@ -145,20 +148,22 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       ...yieldData,
       id: Date.now().toString(),
     };
-    updateState({ yields: [...state.yields, newYield] });
-  }, [state.yields, updateState]);
+    updateState(prevState => ({ yields: [...prevState.yields, newYield] }));
+  }, [updateState]);
 
   const updateYield = useCallback((id: string, updates: Partial<Yield>) => {
-    const updatedYields = state.yields.map(yieldItem =>
-      yieldItem.id === id ? { ...yieldItem, ...updates } : yieldItem
-    );
-    updateState({ yields: updatedYields });
-  }, [state.yields, updateState]);
+    updateState(prevState => ({
+      yields: prevState.yields.map(yieldItem =>
+        yieldItem.id === id ? { ...yieldItem, ...updates } : yieldItem
+      )
+    }));
+  }, [updateState]);
 
   const deleteYield = useCallback((id: string) => {
-    const filteredYields = state.yields.filter(yieldItem => yieldItem.id !== id);
-    updateState({ yields: filteredYields });
-  }, [state.yields, updateState]);
+    updateState(prevState => ({
+      yields: prevState.yields.filter(yieldItem => yieldItem.id !== id)
+    }));
+  }, [updateState]);
 
   // Trial and registration
   const getRemainingTrialDays = useCallback(() => {
