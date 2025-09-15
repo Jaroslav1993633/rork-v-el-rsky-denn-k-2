@@ -14,16 +14,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DashboardScreen() {
   const {
-    hives,
     getThisMonthInspections,
     getPendingTasks,
     getThisYearYield,
+    getActiveHiveCount,
   } = useBeekeeping();
   const insets = useSafeAreaInsets();
 
   const thisMonthInspections = getThisMonthInspections();
   const pendingTasks = getPendingTasks();
   const thisYearYield = getThisYearYield();
+  const activeHiveCount = getActiveHiveCount();
 
   const StatCard = ({ 
     title, 
@@ -83,7 +84,7 @@ export default function DashboardScreen() {
           <View style={styles.statsGrid}>
             <StatCard
               title="Úle celkom"
-              value={hives.length}
+              value={activeHiveCount}
               onPress={() => router.push('/hives')}
               icon={Hexagon}
             />
