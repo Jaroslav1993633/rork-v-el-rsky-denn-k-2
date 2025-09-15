@@ -235,14 +235,12 @@ export default function StatisticsScreen() {
             <StatCard
               title="Úle v roku"
               value={getHiveCountByYear(selectedYearForStats)}
-              subtitle={`Celkom úľov: ${hives.length}`}
               icon={Hexagon}
               color="#22c55e"
             />
             <StatCard
               title={`Prehliadky ${selectedYearForStats}`}
               value={getInspectionsByYear(selectedYearForStats)}
-              subtitle={`Celkom: ${inspections.length} prehliadok`}
               icon={Calendar}
               color="#3b82f6"
             />
@@ -268,24 +266,7 @@ export default function StatisticsScreen() {
 
 
         <View style={styles.section}>
-          <TouchableOpacity 
-            style={styles.sectionHeaderClickable}
-            onPress={() => {
-              const totalYield = Object.values(yieldByType).reduce((sum, amount) => sum + amount, 0);
-              const yieldDetails = Object.entries(yieldByType)
-                .map(([type, amount]) => `${yieldTypeLabels[type as keyof typeof yieldTypeLabels] || type}: ${amount.toFixed(1)} kg`)
-                .join('\n');
-              
-              Alert.alert(
-                `Úroda ${selectedYearForStats}`,
-                `Celková úroda: ${totalYield.toFixed(1)} kg\n\nDetaily:\n${yieldDetails}`,
-                [{ text: 'OK' }]
-              );
-            }}
-          >
-            <Text style={styles.sectionTitle}>Úroda podľa typu ({selectedYearForStats})</Text>
-            <Text style={styles.sectionSubtitle}>Kliknite pre detaily</Text>
-          </TouchableOpacity>
+          <Text style={styles.sectionTitle}>Úroda podľa typu ({selectedYearForStats})</Text>
           <View style={styles.yieldList}>
             {Object.entries(yieldByType).map(([type, amount]) => (
               <View key={type} style={styles.yieldItem}>
