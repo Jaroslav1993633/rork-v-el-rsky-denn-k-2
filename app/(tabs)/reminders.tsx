@@ -9,7 +9,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import { Plus, Bell, Calendar, CheckCircle, Circle, X, Trash2 } from 'lucide-react-native';
+import { Plus, Bell, Calendar, CheckCircle, Circle, X, Trash2, Edit3 } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Task } from '@/types/beekeeping';
@@ -144,34 +144,41 @@ export default function RemindersScreen() {
         overdue && styles.overdueTask,
       ]}>
         <View style={styles.taskContent}>
-          <TouchableOpacity
-            style={styles.taskHeader}
-            onPress={() => toggleTaskCompletion(item.id, item.completed)}
-          >
-            <View style={styles.taskIcon}>
-              {item.completed ? (
-                <CheckCircle color="#22c55e" size={24} />
-              ) : (
-                <Circle color="#6b7280" size={24} />
-              )}
-            </View>
+          <View style={styles.taskHeader}>
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={() => toggleTaskCompletion(item.id, item.completed)}
+            >
+              <View style={styles.taskIcon}>
+                {item.completed ? (
+                  <CheckCircle color="#22c55e" size={24} />
+                ) : (
+                  <Circle color="#6b7280" size={24} />
+                )}
+              </View>
+            </TouchableOpacity>
+            
             <View style={styles.taskInfo}>
-              <TouchableOpacity
-                onPress={() => !item.completed && handleEditTask(item)}
-                disabled={item.completed}
-              >
-                <Text style={[
-                  styles.taskTitle,
-                  item.completed && styles.completedText,
-                ]}>
-                  {item.title}
-                </Text>
-                <Text style={styles.taskHive}>
-                  {getHiveName(item.hiveId)}
-                </Text>
-              </TouchableOpacity>
+              <Text style={[
+                styles.taskTitle,
+                item.completed && styles.completedText,
+              ]}>
+                {item.title}
+              </Text>
+              <Text style={styles.taskHive}>
+                {getHiveName(item.hiveId)}
+              </Text>
             </View>
-          </TouchableOpacity>
+            
+            {!item.completed && (
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => handleEditTask(item)}
+              >
+                <Edit3 color="#6b7280" size={18} />
+              </TouchableOpacity>
+            )}
+          </View>
           
           <View style={styles.taskDetails}>
             <View style={styles.taskDate}>
@@ -431,11 +438,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  taskIcon: {
+  checkboxContainer: {
     marginRight: 12,
+  },
+  taskIcon: {
+    // No margin needed as it's inside checkboxContainer
   },
   taskInfo: {
     flex: 1,
+  },
+  editButton: {
+    padding: 8,
+    marginLeft: 8,
+    borderRadius: 6,
+    backgroundColor: '#f9fafb',
   },
   taskTitle: {
     fontSize: 16,
