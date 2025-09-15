@@ -38,6 +38,7 @@ const queenStatusLabels = {
 };
 
 const queenColors = [
+  'Neoznačená',
   'Biela',
   'Žltá', 
   'Červená',
