@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Plus, Bell, Calendar, CheckCircle, Circle, X, Trash2, Edit3 } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Task } from '@/types/beekeeping';
@@ -258,6 +259,9 @@ export default function RemindersScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.push('/')} style={styles.closeButton}>
+          <X color="#6b7280" size={24} />
+        </TouchableOpacity>
         <Text style={styles.title}>Pripomienky</Text>
         <TouchableOpacity 
           style={styles.headerButton}
@@ -439,6 +443,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
+  closeButton: {
+    padding: 4,
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -589,9 +596,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#111827',
-  },
-  closeButton: {
-    padding: 4,
   },
   modalContent: {
     flex: 1,
