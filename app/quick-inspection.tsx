@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Switch,
   ActivityIndicator,
   Animated,
 } from 'react-native';
@@ -259,12 +258,18 @@ export default function QuickInspectionScreen() {
             {hives.length > 1 && (
               <View style={styles.selectAllContainer}>
                 <Text style={styles.selectAllLabel}>Vybrať všetky</Text>
-                <Switch
-                  value={selectAll}
-                  onValueChange={handleSelectAll}
-                  trackColor={{ false: '#e5e7eb', true: currentConfig.color + '60' }}
-                  thumbColor={selectAll ? currentConfig.color : '#f3f4f6'}
-                />
+                <TouchableOpacity
+                  style={[
+                    styles.toggleSwitch,
+                    selectAll && [styles.toggleSwitchActive, { backgroundColor: currentConfig.color }]
+                  ]}
+                  onPress={() => handleSelectAll(!selectAll)}
+                >
+                  <View style={[
+                    styles.toggleThumb,
+                    selectAll && styles.toggleThumbActive
+                  ]} />
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -499,5 +504,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
     textAlign: 'center',
+  },
+  toggleSwitch: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#e5e7eb',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleSwitchActive: {
+    backgroundColor: '#22c55e',
+  },
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  toggleThumbActive: {
+    transform: [{ translateX: 20 }],
   },
 });

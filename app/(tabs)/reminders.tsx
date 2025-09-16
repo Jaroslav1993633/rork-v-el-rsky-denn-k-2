@@ -328,18 +328,29 @@ export default function RemindersScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Úle * (môžete vybrať viacero)</Text>
-              <TouchableOpacity
-                style={styles.selectAllButton}
-                onPress={() => {
-                  const allHiveIds = hives.filter(hive => !hive.isDeleted).map(h => h.id);
-                  setSelectedHiveIds(selectedHiveIds.length === allHiveIds.length ? [] : allHiveIds);
-                }}
-              >
-                <Text style={styles.selectAllButtonText}>
-                  {selectedHiveIds.length === hives.filter(hive => !hive.isDeleted).length ? 'Odznačiť všetky' : 'Vybrať všetky'}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.inputLabel}>Vyberte úle</Text>
+                {hives.filter(hive => !hive.isDeleted).length > 1 && (
+                  <View style={styles.selectAllContainer}>
+                    <Text style={styles.selectAllLabel}>Označiť všetky</Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.toggleSwitch,
+                        selectedHiveIds.length === hives.filter(hive => !hive.isDeleted).length && styles.toggleSwitchActive
+                      ]}
+                      onPress={() => {
+                        const allHiveIds = hives.filter(hive => !hive.isDeleted).map(h => h.id);
+                        setSelectedHiveIds(selectedHiveIds.length === allHiveIds.length ? [] : allHiveIds);
+                      }}
+                    >
+                      <View style={[
+                        styles.toggleThumb,
+                        selectedHiveIds.length === hives.filter(hive => !hive.isDeleted).length && styles.toggleThumbActive
+                      ]} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
               <View style={styles.pickerContainer}>
                 {hives.filter(hive => !hive.isDeleted).map((hive) => {
                   const isSelected = selectedHiveIds.includes(hive.id);
@@ -613,18 +624,45 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-  selectAllButton: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 6,
-    marginBottom: 12,
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  selectAllButtonText: {
+  selectAllContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectAllLabel: {
     fontSize: 14,
-    color: '#374151',
-    fontWeight: '500',
+    color: '#6b7280',
+  },
+  toggleSwitch: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#e5e7eb',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleSwitchActive: {
+    backgroundColor: '#22c55e',
+  },
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  toggleThumbActive: {
+    transform: [{ translateX: 20 }],
   },
   hiveOption: {
     paddingHorizontal: 12,
