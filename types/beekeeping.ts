@@ -1,10 +1,11 @@
 export interface Hive {
   id: string;
   name: string;
-  type: 'odlozenec' | 'roj' | 'zabehnutaRodina' | 'kupeneVcelstvo' | 'ine';
+  type: 'odlozenec' | 'roj' | 'zabehnutaRodina' | 'kupeneVcelstvo';
   frameCount: number;
   queenStatus: 'stara' | 'nova' | 'vylahne';
   queenColor: string;
+  queenEggLaying: 'lozi' | 'nelozi';
   colonyFoundingDate: string;
   createdAt: string;
   isDeleted?: boolean;

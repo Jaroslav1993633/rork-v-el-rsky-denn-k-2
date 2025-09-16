@@ -19,13 +19,17 @@ const hiveTypes = [
   { value: 'roj', label: 'Roj' },
   { value: 'zabehnutaRodina', label: 'Zabehnutá rodina' },
   { value: 'kupeneVcelstvo', label: 'Kúpené včelstvo' },
-  { value: 'ine', label: 'Iné' },
 ] as const;
 
 const queenStatuses = [
   { value: 'stara', label: 'Stará matka' },
   { value: 'nova', label: 'Nová matka' },
   { value: 'vylahne', label: 'Ide sa vyliahnuť' },
+] as const;
+
+const queenEggLaying = [
+  { value: 'lozi', label: 'Loží' },
+  { value: 'nelozi', label: 'Neloží' },
 ] as const;
 
 const queenColors = [
@@ -41,11 +45,12 @@ export default function AddHiveModal() {
   const { addHive } = useBeekeeping();
   
   const [name, setName] = useState('');
-  const [type, setType] = useState<'odlozenec' | 'roj' | 'zabehnutaRodina' | 'kupeneVcelstvo' | 'ine'>('odlozenec');
+  const [type, setType] = useState<'odlozenec' | 'roj' | 'zabehnutaRodina' | 'kupeneVcelstvo'>('odlozenec');
   const [frameCount, setFrameCount] = useState('10');
   const [queenStatus, setQueenStatus] = useState<'stara' | 'nova' | 'vylahne'>('stara');
   const [queenColor, setQueenColor] = useState('#f3f4f6');
   const [queenColorName, setQueenColorName] = useState('Neoznačená');
+  const [queenEggLayingStatus, setQueenEggLayingStatus] = useState<'lozi' | 'nelozi'>('lozi');
   const [colonyFoundingDate, setColonyFoundingDate] = useState('');
 
   const handleSave = () => {
@@ -96,6 +101,7 @@ export default function AddHiveModal() {
       frameCount: frameCountNum,
       queenStatus,
       queenColor: queenColorName,
+      queenEggLaying: queenEggLayingStatus,
       colonyFoundingDate: foundingDate.toISOString(),
     });
 
@@ -104,7 +110,7 @@ export default function AddHiveModal() {
 
   const TypeSelector = () => (
     <View style={styles.selectorContainer}>
-      <Text style={styles.label}>Typ úľa</Text>
+      <Text style={styles.label}>Typ rodiny</Text>
       <View style={styles.typeGrid}>
         {hiveTypes.map((hiveType) => (
           <TouchableOpacity
@@ -143,6 +149,31 @@ export default function AddHiveModal() {
             <Text style={[
               styles.statusText,
               queenStatus === status.value && styles.selectedStatusText,
+            ]}>
+              {status.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+
+  const QueenEggLayingSelector = () => (
+    <View style={styles.selectorContainer}>
+      <Text style={styles.label}>Stav matky - kladenie vajíčok</Text>
+      <View style={styles.statusGrid}>
+        {queenEggLaying.map((status) => (
+          <TouchableOpacity
+            key={status.value}
+            style={[
+              styles.statusOption,
+              queenEggLayingStatus === status.value && styles.selectedStatus,
+            ]}
+            onPress={() => setQueenEggLayingStatus(status.value)}
+          >
+            <Text style={[
+              styles.statusText,
+              queenEggLayingStatus === status.value && styles.selectedStatusText,
             ]}>
               {status.label}
             </Text>
@@ -239,6 +270,8 @@ export default function AddHiveModal() {
             </View>
 
             <QueenStatusSelector />
+
+            <QueenEggLayingSelector />
 
             <ColorSelector />
           </ScrollView>

@@ -17,7 +17,11 @@ const hiveTypeLabels = {
   roj: 'Roj',
   zabehnutaRodina: 'Zabehnutá rodina',
   kupeneVcelstvo: 'Kúpené včelstvo',
-  ine: 'Iné',
+};
+
+const queenEggLayingLabels = {
+  lozi: 'Loží',
+  nelozi: 'Neloží',
 };
 
 const queenStatusLabels = {
@@ -62,6 +66,10 @@ export default function HivesScreen() {
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Matka:</Text>
           <Text style={styles.detailValue}>{queenStatusLabels[item.queenStatus]}</Text>
+        </View>
+        <View style={styles.detailItem}>
+          <Text style={styles.detailLabel}>Kladenie vajíčok:</Text>
+          <Text style={styles.detailValue}>{queenEggLayingLabels[item.queenEggLaying]}</Text>
         </View>
         {item.queenColor && (
           <View style={styles.detailItem}>
