@@ -40,13 +40,22 @@ export default function HivesScreen() {
   // Filter out deleted hives from current apiary
   const activeHives = currentApiaryHives;
   
+  // Create a map of apiary names for efficient lookup
+  const apiaryNamesMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    apiaries.forEach(apiary => {
+      map.set(apiary.id, apiary.name);
+    });
+    return map;
+  }, [apiaries]);
+  
   // Debug logging
   console.log('Hives screen - Total hives:', hives.length);
   console.log('Hives screen - Active hives:', activeHives.length);
   console.log('Hives screen - Hives data:', hives.map(h => ({ id: h.id, name: h.name, isDeleted: h.isDeleted })));
 
-  const renderHiveItem = ({ item }: { item: Hive }) => {
-    const apiaryName = item.apiaryId ? apiaries.find(a => a.id === item.apiaryId)?.name || 'Neznáma' : null;
+  const renderHiveItem = React.useCallback(({ item }: { item: Hive }) => {
+    const apiaryName = item.apiaryId ? apiaryNamesMap.get(item.apiaryId) || 'Neznáma' : null;
     
     return (
       <TouchableOpacity 
@@ -104,7 +113,7 @@ export default function HivesScreen() {
         </View>
       </TouchableOpacity>
     );
-  };
+  }, [apiaryNamesMap]);
 
   const EmptyState = () => (
     <View style={styles.emptyState}>
