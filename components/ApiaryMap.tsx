@@ -1,7 +1,15 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
-import MapView, { Marker, Circle } from 'react-native-maps';
 import type { Apiary } from '@/types/beekeeping';
+
+// Conditionally import react-native-maps only on native platforms
+let MapView: any, Marker: any, Circle: any;
+if (Platform.OS !== 'web') {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  Circle = maps.Circle;
+}
 
 interface ApiaryMapProps {
   apiary: Apiary;
