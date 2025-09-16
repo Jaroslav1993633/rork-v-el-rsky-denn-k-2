@@ -9,9 +9,10 @@ import {
   Alert,
   ActivityIndicator,
   Animated,
+  Switch,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { X, Check, Calendar } from 'lucide-react-native';
+import { X, Check } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,8 +27,8 @@ export default function AddHarvestScreen() {
   const [selectedHiveIds, setSelectedHiveIds] = useState<string[]>([]);
   const [yieldType, setYieldType] = useState<YieldType>('med');
   const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
+  const [selectAll, setSelectAll] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState<boolean>(false);
   const [successOpacity] = useState(new Animated.Value(0));
@@ -45,7 +46,6 @@ export default function AddHarvestScreen() {
     console.log('selectedHiveIds:', selectedHiveIds);
     console.log('amount:', amount, 'type:', typeof amount);
     console.log('yieldType:', yieldType);
-    console.log('date:', date);
     console.log('notes:', notes);
     console.log('hives available:', hives.length);
     console.log('currentApiary:', currentApiary);
@@ -78,7 +78,7 @@ export default function AddHarvestScreen() {
           type: yieldType,
           amount: numAmount, // Plné množstvo pre každý úľ
           unit: 'kg',
-          date: new Date(date).toISOString(),
+          date: new Date().toISOString(), // Vždy aktuálny dátum
           notes: notes.trim() || undefined,
         };
         console.log(`Adding yield ${index + 1}/${selectedHiveIds.length}:`, yieldData);
@@ -110,6 +110,7 @@ export default function AddHarvestScreen() {
       setAmount('');
       setNotes('');
       setSelectedHiveIds([]);
+      setSelectAll(false);
       
       // Krátke čakanie pre lepší UX
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -139,15 +140,13 @@ export default function AddHarvestScreen() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('sk-SK');
-  };
-
-  const adjustDate = (days: number) => {
-    const currentDate = new Date(date);
-    currentDate.setDate(currentDate.getDate() + days);
-    setDate(currentDate.toISOString().split('T')[0]);
+  const handleSelectAll = (value: boolean) => {
+    setSelectAll(value);
+    if (value) {
+      setSelectedHiveIds(hives.map(h => h.id));
+    } else {
+      setSelectedHiveIds([]);
+    }
   };
 
   return (
@@ -191,16 +190,24 @@ export default function AddHarvestScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Výber úľov</Text>
-          {currentApiary && (
-            <Text style={styles.sectionSubtitle}>Včelnica: {currentApiary.name}</Text>
-          )}
-          {selectedHiveIds.length > 0 && (
-            <Text style={styles.selectedCount}>
-              Vybrané: {selectedHiveIds.length} {selectedHiveIds.length === 1 ? 'úľ' : 'úľov'}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Vyberte úle
+              {selectedHiveIds.length > 0 && ` (${selectedHiveIds.length})`}
             </Text>
-          )}
-
+            {hives.length > 1 && (
+              <View style={styles.selectAllContainer}>
+                <Text style={styles.selectAllLabel}>Vybrať všetky</Text>
+                <Switch
+                  value={selectAll}
+                  onValueChange={handleSelectAll}
+                  trackColor={{ false: '#e5e7eb', true: '#22c55e60' }}
+                  thumbColor={selectAll ? '#22c55e' : '#f3f4f6'}
+                />
+              </View>
+            )}
+          </View>
+          
           {hives.length === 0 ? (
             <View style={styles.noHivesContainer}>
               <Text style={styles.noHivesText}>
@@ -211,60 +218,43 @@ export default function AddHarvestScreen() {
               </Text>
             </View>
           ) : (
-            <>
-              <View style={styles.selectAllContainer}>
-                <TouchableOpacity
-                  style={styles.selectAllButton}
-                  onPress={() => {
-                    if (selectedHiveIds.length === hives.length) {
-                      setSelectedHiveIds([]);
-                    } else {
-                      setSelectedHiveIds(hives.map(h => h.id));
-                    }
-                  }}
-                >
-                  <Text style={styles.selectAllText}>
-                    {selectedHiveIds.length === hives.length ? 'Zrušiť výber' : 'Vybrať všetky'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.hivesCompactGrid}>
-                {hives.map(hive => {
-                  const isSelected = selectedHiveIds.includes(hive.id);
-                  return (
-                    <TouchableOpacity
-                      key={hive.id}
-                      style={[
-                        styles.compactHiveItem,
-                        isSelected && styles.compactHiveItemSelected
-                      ]}
-                      onPress={() => {
-                        if (isSelected) {
-                          setSelectedHiveIds(prev => prev.filter(id => id !== hive.id));
-                        } else {
-                          setSelectedHiveIds(prev => [...prev, hive.id]);
-                        }
-                      }}
-                    >
-                      <View style={[
-                        styles.checkbox,
-                        isSelected && styles.selectedCheckbox
-                      ]}>
-                        {isSelected && (
-                          <Check color="#ffffff" size={12} />
-                        )}
-                      </View>
-                      <Text style={[
-                        styles.compactHiveName,
-                        isSelected && styles.selectedCompactHiveName
-                      ]}>
-                        {hive.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </>
+            <View style={styles.hivesCompactGrid}>
+              {hives.map(hive => {
+                const isSelected = selectedHiveIds.includes(hive.id);
+                return (
+                  <TouchableOpacity
+                    key={hive.id}
+                    style={[
+                      styles.compactHiveItem,
+                      isSelected && styles.compactHiveItemSelected
+                    ]}
+                    onPress={() => {
+                      if (isSelected) {
+                        setSelectedHiveIds(prev => prev.filter(id => id !== hive.id));
+                        if (selectAll) setSelectAll(false);
+                      } else {
+                        setSelectedHiveIds(prev => [...prev, hive.id]);
+                      }
+                    }}
+                  >
+                    <View style={[
+                      styles.checkbox,
+                      isSelected && styles.selectedCheckbox
+                    ]}>
+                      {isSelected && (
+                        <Check color="#ffffff" size={12} />
+                      )}
+                    </View>
+                    <Text style={[
+                      styles.compactHiveName,
+                      isSelected && styles.selectedCompactHiveName
+                    ]}>
+                      {hive.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           )}
         </View>
 
@@ -311,38 +301,7 @@ export default function AddHarvestScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dátum</Text>
-          <View style={styles.dateContainer}>
-            <View style={styles.dateControls}>
-              <TouchableOpacity 
-                style={styles.dateButton}
-                onPress={() => adjustDate(-1)}
-              >
-                <Text style={styles.dateButtonText}>-1 deň</Text>
-              </TouchableOpacity>
-              
-              <View style={styles.dateDisplay}>
-                <Calendar color="#6b7280" size={20} />
-                <Text style={styles.dateText}>{formatDate(date)}</Text>
-              </View>
-              
-              <TouchableOpacity 
-                style={styles.dateButton}
-                onPress={() => adjustDate(1)}
-              >
-                <Text style={styles.dateButtonText}>+1 deň</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.todayButton}
-              onPress={() => setDate(new Date().toISOString().split('T')[0])}
-            >
-              <Text style={styles.todayButtonText}>Dnes</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Poznámky (voliteľné)</Text>
@@ -525,26 +484,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#111827',
   },
-  selectAllContainer: {
-    marginBottom: 12,
-  },
-  selectAllButton: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  selectAllText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
+  selectAllContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  selectedCount: {
+  selectAllLabel: {
     fontSize: 14,
-    color: '#3b82f6',
-    fontWeight: '500',
-    marginBottom: 12,
+    color: '#6b7280',
   },
   unitLabel: {
     fontSize: 18,
@@ -560,52 +513,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontStyle: 'italic',
   },
-  dateContainer: {
-    gap: 16,
-  },
-  dateControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  dateButton: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  dateButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  dateDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#f9fafb',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  dateText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-  },
-  todayButton: {
-    backgroundColor: '#3b82f6',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  todayButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
+
   notesInput: {
     backgroundColor: '#f9fafb',
     borderWidth: 1,
@@ -616,11 +524,7 @@ const styles = StyleSheet.create({
     color: '#111827',
     minHeight: 100,
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 12,
-  },
+
   noHivesContainer: {
     padding: 20,
     alignItems: 'center',
