@@ -406,17 +406,6 @@ export default function StatisticsScreen() {
                     <View style={styles.hiveYieldHeaderContent}>
                       <Text style={styles.hiveYieldName}>{hiveName}</Text>
                       <View style={styles.hiveYieldHeaderRight}>
-                        <TouchableOpacity
-                          style={styles.editHiveButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            if (data.yields.length > 0) {
-                              handleEditYield(data.yields[0]);
-                            }
-                          }}
-                        >
-                          <Pencil color="#6b7280" size={14} />
-                        </TouchableOpacity>
                         <Text style={styles.hiveYieldTotal}>{data.total.toFixed(1)} kg</Text>
                         {isExpanded ? (
                           <ChevronUp color="#6b7280" size={16} />
@@ -907,11 +896,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#eff6ff',
   },
-  editHiveButton: {
-    padding: 4,
-    borderRadius: 4,
-    backgroundColor: '#f3f4f6',
-  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
