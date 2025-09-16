@@ -6,10 +6,11 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
-import { MapPin, Edit3, Save, X, Satellite, Map as MapIcon } from 'lucide-react-native';
+import { MapPin, Edit3, Save, X, Satellite, Map as MapIcon, Navigation, ExternalLink } from 'lucide-react-native';
 import * as Location from 'expo-location';
 
 interface MapViewProps {
@@ -24,94 +25,44 @@ interface MapViewProps {
   onMapTypeChange: (type: 'standard' | 'satellite') => void;
 }
 
-// OpenStreetMap-based map visualization
+// Interactive web map with OpenStreetMap
 const WebMapView: React.FC<MapViewProps> = ({ location, onLocationChange, isEditing, mapType, onMapTypeChange }) => {
+  const [markerPosition, setMarkerPosition] = useState({ x: 50, y: 50 }); // Center by default
+  const [mapCenter, setMapCenter] = useState({ lat: location.latitude, lng: location.longitude });
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [markerPosition, setMarkerPosition] = useState({ x: 0, y: 0 });
   
-  const zoom = 15;
-  const tileSize = 256;
+  const zoom = 14;
   
-  // Convert lat/lng to pixel coordinates
-  const latLngToPixel = (lat: number, lng: number) => {
-    const x = (lng + 180) / 360 * Math.pow(2, zoom) * tileSize;
-    const latRad = lat * Math.PI / 180;
-    const y = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * Math.pow(2, zoom) * tileSize;
-    return { x, y };
-  };
-  
-  // Convert pixel coordinates to lat/lng
-  const pixelToLatLng = (x: number, y: number) => {
-    const lng = x / (Math.pow(2, zoom) * tileSize) * 360 - 180;
-    const n = Math.PI - 2 * Math.PI * y / (Math.pow(2, zoom) * tileSize);
-    const lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
-    return { latitude: lat, longitude: lng };
-  };
-  
-  const centerPixel = latLngToPixel(location.latitude, location.longitude);
-  const mapWidth = 600;
-  const mapHeight = 400;
-  
-  // Calculate tile bounds
-  const startX = Math.floor((centerPixel.x - mapWidth / 2) / tileSize);
-  const startY = Math.floor((centerPixel.y - mapHeight / 2) / tileSize);
-  const endX = Math.ceil((centerPixel.x + mapWidth / 2) / tileSize);
-  const endY = Math.ceil((centerPixel.y + mapHeight / 2) / tileSize);
-  
-  const handleMouseDown = (event: any) => {
+  // Simple coordinate conversion for display
+  const handleMapClick = (event: any) => {
     if (!isEditing) return;
-    setIsDragging(true);
-    const rect = event.currentTarget.getBoundingClientRect();
-    setDragStart({
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    });
-  };
-  
-  const handleMouseMove = (event: any) => {
-    if (!isDragging || !isEditing) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const currentX = event.clientX - rect.left;
-    const currentY = event.clientY - rect.top;
     
-    // Keep within bounds
-    const boundedX = Math.max(20, Math.min(rect.width - 20, currentX));
-    const boundedY = Math.max(20, Math.min(rect.height - 20, currentY));
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    
+    // Keep marker within bounds
+    const boundedX = Math.max(5, Math.min(95, x));
+    const boundedY = Math.max(5, Math.min(95, y));
     
     setMarkerPosition({ x: boundedX, y: boundedY });
     
-    // Convert to lat/lng
+    // Simple lat/lng calculation based on position
     if (onLocationChange) {
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      const offsetX = boundedX - centerX;
-      const offsetY = boundedY - centerY;
+      const latOffset = (boundedY - 50) * -0.01; // Negative because Y increases downward
+      const lngOffset = (boundedX - 50) * 0.01;
       
-      const pixelX = centerPixel.x + offsetX;
-      const pixelY = centerPixel.y + offsetY;
-      
-      const newLocation = pixelToLatLng(pixelX, pixelY);
-      onLocationChange(newLocation);
+      onLocationChange({
+        latitude: mapCenter.lat + latOffset,
+        longitude: mapCenter.lng + lngOffset,
+      });
     }
   };
   
-  const handleMouseUp = () => {
-    setIsDragging(false);
+  const openInMaps = () => {
+    const url = `https://www.google.com/maps?q=${location.latitude},${location.longitude}&z=15`;
+    window.open(url, '_blank');
   };
-  
-  const getTileUrl = (x: number, y: number, z: number) => {
-    if (mapType === 'satellite') {
-      return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
-    }
-    return `https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
-  };
-  
-  // Calculate flight radius circles in pixels
-  const metersPerPixel = 156543.03392 * Math.cos(location.latitude * Math.PI / 180) / Math.pow(2, zoom);
-  const radius2km = (2000 / metersPerPixel);
-  const radius3_5km = (3500 / metersPerPixel);
-  const radius5km = (5000 / metersPerPixel);
   
   return (
     <div
@@ -119,44 +70,28 @@ const WebMapView: React.FC<MapViewProps> = ({ location, onLocationChange, isEdit
         ...styles.webMapContainer,
         position: 'relative',
         cursor: isEditing ? 'crosshair' : 'default',
-        overflow: 'hidden',
+        backgroundImage: mapType === 'satellite' 
+          ? `url(https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${location.longitude},${location.latitude},${zoom}/600x400@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw)`
+          : `url(https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${location.longitude},${location.latitude},${zoom}/600x400@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw)`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
       }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onClick={handleMapClick}
     >
-      {/* Map tiles */}
+      {/* Fallback pattern if map doesn't load */}
       <div style={{
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '100%',
-        height: '100%',
-      }}>
-        {Array.from({ length: endY - startY + 1 }, (_, i) => startY + i).map(y =>
-          Array.from({ length: endX - startX + 1 }, (_, i) => startX + i).map(x => {
-            const tileX = (x * tileSize) - (centerPixel.x - mapWidth / 2);
-            const tileY = (y * tileSize) - (centerPixel.y - mapHeight / 2);
-            
-            return (
-              <img
-                key={`${x}-${y}`}
-                src={getTileUrl(x, y, zoom)}
-                style={{
-                  position: 'absolute',
-                  left: tileX,
-                  top: tileY,
-                  width: tileSize,
-                  height: tileSize,
-                  pointerEvents: 'none',
-                }}
-                alt="Map tile"
-              />
-            );
-          })
-        )}
-      </div>
+        right: 0,
+        bottom: 0,
+        background: 'linear-gradient(45deg, #f0f9ff 25%, transparent 25%), linear-gradient(-45deg, #f0f9ff 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f9ff 75%), linear-gradient(-45deg, transparent 75%, #f0f9ff 75%)',
+        backgroundSize: '20px 20px',
+        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+        opacity: 0.1,
+        zIndex: 0,
+      }} />
       
       {/* Flight radius circles */}
       <div style={{
@@ -164,102 +99,146 @@ const WebMapView: React.FC<MapViewProps> = ({ location, onLocationChange, isEdit
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: radius5km * 2,
-        height: radius5km * 2,
+        width: '300px',
+        height: '300px',
         borderRadius: '50%',
-        border: '2px solid #ef4444',
+        border: '3px solid #ef4444',
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         opacity: 0.7,
         pointerEvents: 'none',
+        zIndex: 1,
       }} />
       <div style={{
         position: 'absolute',
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: radius3_5km * 2,
-        height: radius3_5km * 2,
+        width: '210px',
+        height: '210px',
         borderRadius: '50%',
-        border: '2px solid #f59e0b',
+        border: '3px solid #f59e0b',
         backgroundColor: 'rgba(245, 158, 11, 0.1)',
         opacity: 0.8,
         pointerEvents: 'none',
+        zIndex: 1,
       }} />
       <div style={{
         position: 'absolute',
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: radius2km * 2,
-        height: radius2km * 2,
+        width: '120px',
+        height: '120px',
         borderRadius: '50%',
-        border: '2px solid #22c55e',
+        border: '3px solid #22c55e',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
         opacity: 0.9,
         pointerEvents: 'none',
+        zIndex: 1,
       }} />
       
       {/* Apiary marker */}
       <div style={{
         position: 'absolute',
-        top: markerPosition.y || '50%',
-        left: markerPosition.x || '50%',
+        top: `${markerPosition.y}%`,
+        left: `${markerPosition.x}%`,
         transform: 'translate(-50%, -50%)',
-        width: '24px',
-        height: '24px',
+        width: '28px',
+        height: '28px',
         backgroundColor: '#22c55e',
         borderRadius: '50%',
-        border: '3px solid white',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        border: '4px solid white',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
         cursor: isEditing ? 'grab' : 'default',
         zIndex: 10,
-        pointerEvents: isEditing ? 'auto' : 'none',
-      }} />
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div style={{
+          width: '8px',
+          height: '8px',
+          backgroundColor: 'white',
+          borderRadius: '50%',
+        }} />
+      </div>
       
-      {/* Map type toggle */}
+      {/* Controls */}
       <div style={{
         position: 'absolute',
         top: '16px',
         left: '16px',
         display: 'flex',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        flexDirection: 'column',
+        gap: '8px',
+        zIndex: 5,
       }}>
+        {/* Map type toggle */}
+        <div style={{
+          display: 'flex',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          borderRadius: '8px',
+          overflow: 'hidden',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        }}>
+          <button
+            style={{
+              padding: '10px 14px',
+              border: 'none',
+              backgroundColor: mapType === 'standard' ? '#3b82f6' : 'transparent',
+              color: mapType === 'standard' ? 'white' : '#374151',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+            onClick={() => onMapTypeChange('standard')}
+          >
+            <MapIcon size={16} />
+            Mapa
+          </button>
+          <button
+            style={{
+              padding: '10px 14px',
+              border: 'none',
+              backgroundColor: mapType === 'satellite' ? '#3b82f6' : 'transparent',
+              color: mapType === 'satellite' ? 'white' : '#374151',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+            onClick={() => onMapTypeChange('satellite')}
+          >
+            <Satellite size={16} />
+            Satelit
+          </button>
+        </div>
+        
+        {/* Open in maps button */}
         <button
           style={{
-            padding: '8px 12px',
+            padding: '10px 14px',
             border: 'none',
-            backgroundColor: mapType === 'standard' ? '#3b82f6' : 'transparent',
-            color: mapType === 'standard' ? 'white' : '#374151',
+            backgroundColor: 'rgba(34, 197, 94, 0.95)',
+            color: 'white',
             cursor: 'pointer',
-            fontSize: '12px',
+            fontSize: '13px',
+            fontWeight: '500',
+            borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
-            gap: '4px',
+            gap: '6px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}
-          onClick={() => onMapTypeChange('standard')}
+          onClick={openInMaps}
         >
-          <MapIcon size={14} />
-          Mapa
-        </button>
-        <button
-          style={{
-            padding: '8px 12px',
-            border: 'none',
-            backgroundColor: mapType === 'satellite' ? '#3b82f6' : 'transparent',
-            color: mapType === 'satellite' ? 'white' : '#374151',
-            cursor: 'pointer',
-            fontSize: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-          }}
-          onClick={() => onMapTypeChange('satellite')}
-        >
-          <Satellite size={14} />
-          Satelit
+          <ExternalLink size={16} />
+          Otvoriť v Google Maps
         </button>
       </div>
       
@@ -268,13 +247,14 @@ const WebMapView: React.FC<MapViewProps> = ({ location, onLocationChange, isEdit
         position: 'absolute',
         bottom: '16px',
         left: '16px',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        padding: '8px 12px',
-        borderRadius: '6px',
-        fontSize: '12px',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        padding: '10px 14px',
+        borderRadius: '8px',
+        fontSize: '13px',
         fontFamily: 'monospace',
         color: '#374151',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        zIndex: 5,
       }}>
         {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
       </div>
@@ -284,25 +264,26 @@ const WebMapView: React.FC<MapViewProps> = ({ location, onLocationChange, isEdit
         position: 'absolute',
         top: '16px',
         right: '16px',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        padding: '12px',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        padding: '14px',
         borderRadius: '8px',
-        fontSize: '12px',
+        fontSize: '13px',
         color: '#374151',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        minWidth: '180px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        minWidth: '200px',
+        zIndex: 5,
       }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Letové vzdialenosti:</div>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-          <div style={{ width: '12px', height: '12px', backgroundColor: '#22c55e', borderRadius: '50%', marginRight: '8px' }} />
+        <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#111827' }}>Letové vzdialenosti:</div>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+          <div style={{ width: '14px', height: '14px', backgroundColor: '#22c55e', borderRadius: '50%', marginRight: '10px' }} />
           <span>2 km - efektívna</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-          <div style={{ width: '12px', height: '12px', backgroundColor: '#f59e0b', borderRadius: '50%', marginRight: '8px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px' }}>
+          <div style={{ width: '14px', height: '14px', backgroundColor: '#f59e0b', borderRadius: '50%', marginRight: '10px' }} />
           <span>3,5 km - dobrá</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div style={{ width: '12px', height: '12px', backgroundColor: '#ef4444', borderRadius: '50%', marginRight: '8px' }} />
+          <div style={{ width: '14px', height: '14px', backgroundColor: '#ef4444', borderRadius: '50%', marginRight: '10px' }} />
           <span>5 km - neefektívna</span>
         </div>
       </div>
@@ -312,14 +293,16 @@ const WebMapView: React.FC<MapViewProps> = ({ location, onLocationChange, isEdit
           position: 'absolute',
           bottom: '16px',
           right: '16px',
-          backgroundColor: 'rgba(59, 130, 246, 0.9)',
+          backgroundColor: 'rgba(59, 130, 246, 0.95)',
           color: 'white',
-          padding: '8px 12px',
-          borderRadius: '6px',
-          fontSize: '12px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          padding: '10px 14px',
+          borderRadius: '8px',
+          fontSize: '13px',
+          fontWeight: '500',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          zIndex: 5,
         }}>
-          Kliknite a ťahajte pre zmenu polohy
+          Kliknite na mapu pre zmenu polohy
         </div>
       )}
     </div>
@@ -389,14 +372,21 @@ const MobileMapView: React.FC<MapViewProps> = ({ location, mapType, onMapTypeCha
           const url = Platform.select({
             ios: `maps:${location.latitude},${location.longitude}`,
             android: `geo:${location.latitude},${location.longitude}?z=13`,
+            web: `https://www.google.com/maps?q=${location.latitude},${location.longitude}&z=15`,
           });
           if (url) {
-            console.log('Opening native maps:', url);
+            if (Platform.OS === 'web') {
+              window.open(url, '_blank');
+            } else {
+              Linking.openURL(url).catch(() => {
+                Alert.alert('Chyba', 'Nepodarilo sa otvoriť mapy');
+              });
+            }
           }
         }}
       >
-        <MapPin size={20} color="white" />
-        <Text style={styles.openMapButtonText}>Otvoriť v mapách</Text>
+        <Navigation size={20} color="white" />
+        <Text style={styles.openMapButtonText}>Navigovať</Text>
       </TouchableOpacity>
     </View>
   );
