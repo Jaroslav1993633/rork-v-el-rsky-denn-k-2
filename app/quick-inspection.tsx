@@ -9,6 +9,7 @@ import {
   Alert,
   Switch,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { router } from 'expo-router';
 import { X, Check, Droplets, Bug, Heart } from 'lucide-react-native';
@@ -52,6 +53,8 @@ export default function QuickInspectionScreen() {
   const [notes, setNotes] = useState<string>('');
   const [selectAll, setSelectAll] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState<boolean>(false);
+  const [successOpacity] = useState(new Animated.Value(0));
 
   const currentConfig = ACTION_CONFIGS[actionType];
   const allowsMultiSelect = currentConfig.multiSelect;
@@ -109,9 +112,6 @@ export default function QuickInspectionScreen() {
       
       console.log('All inspections added successfully');
       
-      // Krátke čakanie pre lepší UX
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
       const selectedHiveCount = selectedHiveIds.length;
       const hiveNames = hives
         .filter(h => selectedHiveIds.includes(h.id))
@@ -122,10 +122,31 @@ export default function QuickInspectionScreen() {
         ? `${currentConfig.label} bola úspešne uložená pre úľ: ${hiveNames}`
         : `${currentConfig.label} bola úspešne uložená pre ${selectedHiveCount} úľov: ${hiveNames}`;
       
+      // Zobrazenie success správy
+      setShowSuccessMessage(true);
+      Animated.sequence([
+        Animated.timing(successOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.delay(2000),
+        Animated.timing(successOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        setShowSuccessMessage(false);
+      });
+      
       // Reset formulára
       setNotes('');
       setSelectedHiveIds([]);
       setSelectAll(false);
+      
+      // Krátke čakanie pre lepší UX
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       Alert.alert(
         '✅ Úspešne uložené!', 
@@ -169,6 +190,13 @@ export default function QuickInspectionScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {showSuccessMessage && (
+        <Animated.View style={[styles.successBanner, { opacity: successOpacity }]}>
+          <Check color="#ffffff" size={20} />
+          <Text style={styles.successText}>Informácie boli úspešne pridané!</Text>
+        </Animated.View>
+      )}
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
@@ -414,5 +442,32 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: {
     opacity: 0.6,
+  },
+  successBanner: {
+    position: 'absolute',
+    top: 80,
+    left: 20,
+    right: 20,
+    backgroundColor: '#22c55e',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    gap: 8,
+  },
+  successText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
