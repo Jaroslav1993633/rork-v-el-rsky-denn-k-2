@@ -211,7 +211,7 @@ export default function DashboardScreen() {
               <View style={[styles.quickActionCardIcon, { backgroundColor: '#f59e0b' }]}>
                 <Package color="#ffffff" size={20} />
               </View>
-              <Text style={styles.quickActionCardText}>Pridať úrodu</Text>
+              <Text style={styles.quickActionCardText}>Pridať výnos</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 

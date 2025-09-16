@@ -203,11 +203,23 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
 
   // Yield management
   const addYield = useCallback((yieldData: Omit<Yield, 'id'>) => {
+    console.log('=== ADD YIELD STORE DEBUG ===');
+    console.log('addYield called with:', yieldData);
+    
     const newYield: Yield = {
       ...yieldData,
       id: Date.now().toString(),
     };
-    updateState(prevState => ({ yields: [...(prevState.yields || []), newYield] }));
+    console.log('Created newYield:', newYield);
+    
+    updateState(prevState => {
+      console.log('Current yields count:', (prevState.yields || []).length);
+      const updatedYields = [...(prevState.yields || []), newYield];
+      console.log('Updated yields count:', updatedYields.length);
+      return { yields: updatedYields };
+    });
+    
+    console.log('addYield completed');
   }, [updateState]);
 
   const updateYield = useCallback((id: string, updates: Partial<Yield>) => {
