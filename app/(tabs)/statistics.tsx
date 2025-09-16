@@ -549,13 +549,6 @@ export default function StatisticsScreen() {
           </View>
         </View>
       </ScrollView>
-      
-      <TouchableOpacity 
-        style={styles.fab}
-        onPress={() => router.push('/add-harvest')}
-      >
-        <Plus color="#ffffff" size={24} />
-      </TouchableOpacity>
 
       <Modal
         visible={editingYield !== null}
@@ -791,25 +784,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
 
-  fab: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#22c55e',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-  },
+
   yearPickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
