@@ -980,25 +980,25 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   modalActions: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: 12,
   },
   modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
+    minHeight: 50,
   },
   saveButton: {
     backgroundColor: '#22c55e',
+    width: '100%',
   },
   saveButtonText: {
     color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   fullWidthButton: {
-    flex: 0,
     width: '100%',
   },
   toggleIcon: {
