@@ -120,11 +120,6 @@ export default function StatisticsScreen() {
           <Icon color="#ffffff" size={20} />
         </View>
         <Text style={styles.statTitle}>{title}</Text>
-        {onReset && (
-          <TouchableOpacity onPress={onReset} style={styles.resetButton}>
-            <RotateCcw color="#6b7280" size={16} />
-          </TouchableOpacity>
-        )}
       </View>
       <Text style={styles.statValue}>{value}</Text>
       {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
@@ -274,7 +269,6 @@ export default function StatisticsScreen() {
               subtitle={`${monthNames[currentMonth]} ${currentYear}`}
               icon={TrendingUp}
               color="#f59e0b"
-              onReset={handleResetMonth}
             />
             <StatCard
               title={`Výnosy ${selectedYearForStats}`}
@@ -282,7 +276,6 @@ export default function StatisticsScreen() {
               subtitle={`Celkové výnosy: ${Object.values(getYieldByType(selectedYearForStats)).reduce((sum, amount) => sum + amount, 0).toFixed(1)} kg`}
               icon={BarChart3}
               color="#8b5cf6"
-              onReset={selectedYearForStats === currentYear ? handleResetYear : undefined}
             />
           </View>
         </View>
