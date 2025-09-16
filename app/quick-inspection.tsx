@@ -23,7 +23,7 @@ const ACTION_CONFIGS = {
     label: 'Prehliadka úľa',
     icon: Check,
     color: '#3b82f6',
-    multiSelect: false,
+    multiSelect: true,
   },
   feeding: {
     label: 'Kŕmenie',
@@ -59,19 +59,14 @@ export default function QuickInspectionScreen() {
   const [successOpacity] = useState(new Animated.Value(0));
 
   const currentConfig = ACTION_CONFIGS[actionType];
-  const allowsMultiSelect = currentConfig.multiSelect;
 
   const handleHiveToggle = (hiveId: string) => {
-    if (!allowsMultiSelect) {
-      setSelectedHiveIds([hiveId]);
-    } else {
-      setSelectedHiveIds(prev => {
-        if (prev.includes(hiveId)) {
-          return prev.filter(id => id !== hiveId);
-        }
-        return [...prev, hiveId];
-      });
-    }
+    setSelectedHiveIds(prev => {
+      if (prev.includes(hiveId)) {
+        return prev.filter(id => id !== hiveId);
+      }
+      return [...prev, hiveId];
+    });
   };
 
   const handleSelectAll = (value: boolean) => {
@@ -258,10 +253,10 @@ export default function QuickInspectionScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
-              {allowsMultiSelect ? 'Vyberte úle' : 'Vyberte úľ'}
+              Vyberte úle
               {selectedHiveIds.length > 0 && ` (${selectedHiveIds.length})`}
             </Text>
-            {allowsMultiSelect && hives.length > 3 && (
+            {hives.length > 1 && (
               <View style={styles.selectAllContainer}>
                 <Text style={styles.selectAllLabel}>Vybrať všetky</Text>
                 <Switch
