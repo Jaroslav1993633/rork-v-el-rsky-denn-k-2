@@ -7,9 +7,11 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, Save, Calendar } from 'lucide-react-native';
+import { X, Check, Calendar } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,6 +28,9 @@ export default function AddHarvestScreen() {
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState<boolean>(false);
+  const [successOpacity] = useState(new Animated.Value(0));
 
   const yieldTypes = [
     { value: 'med' as YieldType, label: 'Med' },
@@ -34,7 +39,7 @@ export default function AddHarvestScreen() {
     { value: 'vosk' as YieldType, label: 'Vosk' },
   ];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     console.log('=== SAVE YIELD DEBUG ===');
     console.log('handleSave called');
     console.log('selectedHiveIds:', selectedHiveIds);
@@ -60,16 +65,18 @@ export default function AddHarvestScreen() {
       return;
     }
 
+    setIsSaving(true);
+
     try {
-      const amountPerHive = numAmount / selectedHiveIds.length;
-      console.log('amountPerHive:', amountPerHive);
+      // NEDELÍME množstvo - každý úľ dostane plné množstvo
+      console.log('Adding full amount to each hive:', numAmount);
       console.log('About to add yields for hives:', selectedHiveIds);
 
       selectedHiveIds.forEach((hiveId, index) => {
         const yieldData = {
           hiveId,
           type: yieldType,
-          amount: amountPerHive,
+          amount: numAmount, // Plné množstvo pre každý úľ
           unit: 'kg',
           date: new Date(date).toISOString(),
           notes: notes.trim() || undefined,
@@ -80,17 +87,55 @@ export default function AddHarvestScreen() {
       });
 
       console.log('All yields added successfully');
+      
+      // Zobrazenie success správy
+      setShowSuccessMessage(true);
+      Animated.sequence([
+        Animated.timing(successOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.delay(2000),
+        Animated.timing(successOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        setShowSuccessMessage(false);
+      });
+      
+      // Reset formulára
+      setAmount('');
+      setNotes('');
+      setSelectedHiveIds([]);
+      
+      // Krátke čakanie pre lepší UX
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       const hiveText = selectedHiveIds.length === 1 ? 'úľa' : `${selectedHiveIds.length} úľov`;
-      Alert.alert('Úspech', `Výnos bol pridaný pre ${hiveText}`, [
-        { text: 'OK', onPress: () => {
-          console.log('Navigating back');
-          router.back();
-        }}
-      ]);
+      Alert.alert(
+        '✅ BOLO ULOŽENÉ!', 
+        `Výnos ${numAmount} kg ${yieldType} bol pridaný pre ${hiveText}`, 
+        [
+          { 
+            text: 'Späť na prehľad', 
+            onPress: () => router.back(),
+            style: 'default'
+          },
+          { 
+            text: 'Pridať ďalší výnos', 
+            style: 'cancel' 
+          }
+        ]
+      );
     } catch (error) {
       console.error('Error saving yield:', error);
       console.error('Error details:', JSON.stringify(error));
-      Alert.alert('Chyba', 'Nepodarilo sa uložiť výnos');
+      Alert.alert('❌ Chyba', 'Nepodarilo sa uložiť výnos. Skúste to znovu.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -110,19 +155,39 @@ export default function AddHarvestScreen() {
       <Stack.Screen 
         options={{
           title: 'Pridať výnos',
-          headerShown: true,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-              <ArrowLeft color="#111827" size={24} />
-            </TouchableOpacity>
-          ),
-          headerRight: () => (
-            <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
-              <Save color="#22c55e" size={24} />
-            </TouchableOpacity>
-          ),
+          headerShown: false,
         }}
       />
+
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+          <X color="#6b7280" size={24} />
+        </TouchableOpacity>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Pridať výnos</Text>
+          {currentApiary && (
+            <Text style={styles.subtitle}>{currentApiary.name}</Text>
+          )}
+        </View>
+        <TouchableOpacity 
+          onPress={handleSave} 
+          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#22c55e" />
+          ) : (
+            <Check color="#22c55e" size={24} />
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {showSuccessMessage && (
+        <Animated.View style={[styles.successBanner, { opacity: successOpacity }]}>
+          <Check color="#ffffff" size={20} />
+          <Text style={styles.successText}>Výnos bol úspešne pridaný!</Text>
+        </Animated.View>
+      )}
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
@@ -163,15 +228,15 @@ export default function AddHarvestScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-              <View style={styles.hivesList}>
+              <View style={styles.hivesCompactGrid}>
                 {hives.map(hive => {
                   const isSelected = selectedHiveIds.includes(hive.id);
                   return (
                     <TouchableOpacity
                       key={hive.id}
                       style={[
-                        styles.hiveItem,
-                        isSelected && styles.hiveItemSelected
+                        styles.compactHiveItem,
+                        isSelected && styles.compactHiveItemSelected
                       ]}
                       onPress={() => {
                         if (isSelected) {
@@ -181,9 +246,17 @@ export default function AddHarvestScreen() {
                         }
                       }}
                     >
+                      <View style={[
+                        styles.checkbox,
+                        isSelected && styles.selectedCheckbox
+                      ]}>
+                        {isSelected && (
+                          <Check color="#ffffff" size={12} />
+                        )}
+                      </View>
                       <Text style={[
-                        styles.hiveItemText,
-                        isSelected && styles.hiveItemTextSelected
+                        styles.compactHiveName,
+                        isSelected && styles.selectedCompactHiveName
                       ]}>
                         {hive.name}
                       </Text>
@@ -232,8 +305,7 @@ export default function AddHarvestScreen() {
             <Text style={styles.unitLabel}>kg</Text>
             {selectedHiveIds.length > 1 && (
               <Text style={styles.distributionNote}>
-                Množstvo bude rozdelené medzi {selectedHiveIds.length} úľov
-                ({(Number(amount) / selectedHiveIds.length || 0).toFixed(2)} kg na úľ)
+                {Number(amount) || 0} kg bude pridané do každého z {selectedHiveIds.length} úľov
               </Text>
             )}
           </View>
@@ -295,8 +367,63 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  headerButton: {
-    padding: 8,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  titleContainer: {
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  subtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  saveButton: {
+    padding: 4,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  successBanner: {
+    position: 'absolute',
+    top: 80,
+    left: 20,
+    right: 20,
+    backgroundColor: '#22c55e',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    gap: 8,
+  },
+  successText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   content: {
     flex: 1,
@@ -312,30 +439,50 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 16,
   },
-  hivesList: {
+  hivesCompactGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  hiveItem: {
+  compactHiveItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f9fafb',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    minWidth: 80,
   },
-  hiveItemSelected: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
+  compactHiveItemSelected: {
+    backgroundColor: '#f0fdf4',
+    borderColor: '#22c55e',
   },
-  hiveItemText: {
+  checkbox: {
+    width: 16,
+    height: 16,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedCheckbox: {
+    backgroundColor: '#22c55e',
+    borderColor: '#22c55e',
+  },
+  compactHiveName: {
     fontSize: 14,
     fontWeight: '500',
     color: '#374151',
+    flex: 1,
   },
-  hiveItemTextSelected: {
-    color: '#ffffff',
+  selectedCompactHiveName: {
+    color: '#22c55e',
+    fontWeight: '600',
   },
   typesList: {
     flexDirection: 'row',
@@ -377,33 +524,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     color: '#111827',
-  },
-  unitsList: {
-    flexDirection: 'row',
-    gap: 8,
-    justifyContent: 'center',
-  },
-  unitItem: {
-    backgroundColor: '#f9fafb',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    minWidth: 50,
-    alignItems: 'center',
-  },
-  unitItemSelected: {
-    backgroundColor: '#f59e0b',
-    borderColor: '#f59e0b',
-  },
-  unitItemText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  unitItemTextSelected: {
-    color: '#ffffff',
   },
   selectAllContainer: {
     marginBottom: 12,
@@ -490,7 +610,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     fontSize: 16,
     color: '#111827',
@@ -509,11 +629,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
     textAlign: 'center',
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#ef4444',
-    marginBottom: 8,
-    fontWeight: '500',
   },
 });
