@@ -257,7 +257,7 @@ export default function StatisticsScreen() {
           
           <View style={styles.statsGrid}>
             <StatCard
-              title="Úle v roku"
+              title="Rodiny v roku"
               value={getHiveCountByYear(selectedYearForStats)}
               icon={Hexagon}
               color="#22c55e"
@@ -277,9 +277,9 @@ export default function StatisticsScreen() {
               onReset={handleResetMonth}
             />
             <StatCard
-              title={`Úroda ${selectedYearForStats}`}
+              title={`Výnosy ${selectedYearForStats}`}
               value={`${getYieldByType(selectedYearForStats).med || 0} kg medu`}
-              subtitle={`Celková úroda: ${Object.values(getYieldByType(selectedYearForStats)).reduce((sum, amount) => sum + amount, 0).toFixed(1)} kg`}
+              subtitle={`Celkové výnosy: ${Object.values(getYieldByType(selectedYearForStats)).reduce((sum, amount) => sum + amount, 0).toFixed(1)} kg`}
               icon={BarChart3}
               color="#8b5cf6"
               onReset={selectedYearForStats === currentYear ? handleResetYear : undefined}
@@ -290,7 +290,7 @@ export default function StatisticsScreen() {
 
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Úroda podľa typu ({selectedYearForStats})</Text>
+          <Text style={styles.sectionTitle}>Výnosy podľa typu ({selectedYearForStats})</Text>
           <View style={styles.yieldList}>
             {Object.entries(yieldByType).map(([type, amount]) => (
               <View key={type} style={styles.yieldItem}>
@@ -316,7 +316,7 @@ export default function StatisticsScreen() {
             onPress={() => setShowHiveYields(!showHiveYields)}
           >
             <View style={styles.sectionHeaderWithToggle}>
-              <Text style={styles.sectionTitle}>Úroda podľa úľov ({selectedYearForStats})</Text>
+              <Text style={styles.sectionTitle}>Výnosy podľa rodín ({selectedYearForStats})</Text>
               {showHiveYields ? (
                 <ChevronUp color="#6b7280" size={20} />
               ) : (
@@ -324,7 +324,7 @@ export default function StatisticsScreen() {
               )}
             </View>
             <Text style={styles.sectionSubtitle}>
-              {Object.keys(yieldByHive).length} úľov s úrodou • Kliknite pre zobrazenie/skrytie
+              {Object.keys(yieldByHive).length} rodín s výnosmi • Kliknite pre zobrazenie/skrytie
             </Text>
           </TouchableOpacity>
           
@@ -357,7 +357,7 @@ export default function StatisticsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Typy úľov</Text>
+          <Text style={styles.sectionTitle}>Typy rodín</Text>
           <View style={styles.hiveTypesList}>
             {Object.entries(
               hives.filter(hive => !hive.isDeleted).reduce((acc, hive) => {
@@ -389,7 +389,7 @@ export default function StatisticsScreen() {
             {hives.filter(hive => !hive.isDeleted).length === 0 && (
               <View style={styles.emptyHiveTypes}>
                 <Text style={styles.emptyHiveTypesText}>
-                  Zatiaľ neboli pridané žiadne úle
+                  Zatiaľ neboli pridané žiadne rodiny
                 </Text>
               </View>
             )}
