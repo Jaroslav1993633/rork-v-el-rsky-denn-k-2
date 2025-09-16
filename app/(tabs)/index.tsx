@@ -91,6 +91,7 @@ export default function DashboardScreen() {
             <StatCard
               title="Prehliadky tento mesiac"
               value={thisMonthInspections}
+              onPress={() => router.push('/statistics')}
               icon={Eye}
             />
             <StatCard
