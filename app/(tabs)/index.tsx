@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Plus, Eye, Bell, BarChart3, Hexagon, ChevronDown, MapPin } from 'lucide-react-native';
+import { Plus, Eye, Bell, BarChart3, Hexagon, ChevronDown, MapPin, Edit3 } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import TrialBanner from '@/components/TrialBanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,12 +26,16 @@ export default function DashboardScreen() {
     getCurrentApiaryHives,
     setCurrentApiary,
     addApiary,
+    updateApiary,
   } = useBeekeeping();
   const insets = useSafeAreaInsets();
 
   const [showApiarySelector, setShowApiarySelector] = React.useState(false);
   const [showAddApiaryModal, setShowAddApiaryModal] = React.useState(false);
   const [newApiaryName, setNewApiaryName] = React.useState('');
+  const [showEditApiaryModal, setShowEditApiaryModal] = React.useState(false);
+  const [editingApiary, setEditingApiary] = React.useState<string | null>(null);
+  const [editApiaryName, setEditApiaryName] = React.useState('');
   
   const currentApiary = getCurrentApiary();
   const currentApiaryHives = getCurrentApiaryHives();
@@ -119,24 +123,36 @@ export default function DashboardScreen() {
           {showApiarySelector && (
             <View style={styles.apiaryDropdown}>
               {apiaries.map((apiary) => (
-                <TouchableOpacity
-                  key={apiary.id}
-                  style={[
-                    styles.apiaryOption,
-                    currentApiary?.id === apiary.id && styles.selectedApiaryOption
-                  ]}
-                  onPress={() => {
-                    setCurrentApiary(apiary.id);
-                    setShowApiarySelector(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.apiaryOptionText,
-                    currentApiary?.id === apiary.id && styles.selectedApiaryOptionText
-                  ]}>
-                    {apiary.name}
-                  </Text>
-                </TouchableOpacity>
+                <View key={apiary.id} style={styles.apiaryOptionContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.apiaryOption,
+                      currentApiary?.id === apiary.id && styles.selectedApiaryOption
+                    ]}
+                    onPress={() => {
+                      setCurrentApiary(apiary.id);
+                      setShowApiarySelector(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.apiaryOptionText,
+                      currentApiary?.id === apiary.id && styles.selectedApiaryOptionText
+                    ]}>
+                      {apiary.name}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.editApiaryButton}
+                    onPress={() => {
+                      setEditingApiary(apiary.id);
+                      setEditApiaryName(apiary.name);
+                      setShowEditApiaryModal(true);
+                      setShowApiarySelector(false);
+                    }}
+                  >
+                    <Edit3 color="#6b7280" size={16} />
+                  </TouchableOpacity>
+                </View>
               ))}
             </View>
           )}
@@ -251,6 +267,56 @@ export default function DashboardScreen() {
                 }}
               >
                 <Text style={styles.confirmButtonText}>Pridať</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Edit Apiary Modal */}
+      <Modal
+        visible={showEditApiaryModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowEditApiaryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Upraviť názov včelnice</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Názov včelnice"
+              value={editApiaryName}
+              onChangeText={setEditApiaryName}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowEditApiaryModal(false);
+                  setEditingApiary(null);
+                  setEditApiaryName('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Zrušiť</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={() => {
+                  if (editApiaryName.trim() && editingApiary) {
+                    updateApiary(editingApiary, {
+                      name: editApiaryName.trim()
+                    });
+                    setShowEditApiaryModal(false);
+                    setEditingApiary(null);
+                    setEditApiaryName('');
+                  } else {
+                    Alert.alert('Chyba', 'Zadajte názov včelnice');
+                  }
+                }}
+              >
+                <Text style={styles.confirmButtonText}>Uložiť</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -404,12 +470,17 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   apiaryOption: {
+    flex: 1,
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
   },
   selectedApiaryOption: {
     backgroundColor: '#f0fdf4',
+  },
+  apiaryOptionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
   apiaryOptionText: {
     fontSize: 16,
@@ -474,5 +545,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#ffffff',
+  },
+  editApiaryButton: {
+    padding: 16,
+    paddingLeft: 8,
   },
 });
