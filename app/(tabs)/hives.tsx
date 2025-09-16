@@ -45,62 +45,66 @@ export default function HivesScreen() {
   console.log('Hives screen - Active hives:', activeHives.length);
   console.log('Hives screen - Hives data:', hives.map(h => ({ id: h.id, name: h.name, isDeleted: h.isDeleted })));
 
-  const renderHiveItem = ({ item }: { item: Hive }) => (
-    <TouchableOpacity 
-      style={styles.hiveCard}
-      onPress={() => router.push(`/hive/${item.id}`)}
-    >
-      <View style={styles.hiveHeader}>
-        <View style={styles.hiveIcon}>
-          <Hexagon color="#22c55e" size={24} />
+  const renderHiveItem = ({ item }: { item: Hive }) => {
+    const apiaryName = item.apiaryId ? apiaries.find(a => a.id === item.apiaryId)?.name || 'Neznáma' : null;
+    
+    return (
+      <TouchableOpacity 
+        style={styles.hiveCard}
+        onPress={() => router.push(`/hive/${item.id}`)}
+      >
+        <View style={styles.hiveHeader}>
+          <View style={styles.hiveIcon}>
+            <Hexagon color="#22c55e" size={24} />
+          </View>
+          <View style={styles.hiveInfo}>
+            <Text style={styles.hiveName}>{item.name}</Text>
+            <Text style={styles.hiveType}>{hiveTypeLabels[item.type]}</Text>
+          </View>
+          <ChevronRight color="#9ca3af" size={20} />
         </View>
-        <View style={styles.hiveInfo}>
-          <Text style={styles.hiveName}>{item.name}</Text>
-          <Text style={styles.hiveType}>{hiveTypeLabels[item.type]}</Text>
-        </View>
-        <ChevronRight color="#9ca3af" size={20} />
-      </View>
-      
-      <View style={styles.hiveDetails}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Rámiky:</Text>
-          <Text style={styles.detailValue}>{item.frameCount}</Text>
-        </View>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Matka:</Text>
-          <Text style={styles.detailValue}>{queenStatusLabels[item.queenStatus]}</Text>
-        </View>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Kladenie vajíčok:</Text>
-          <Text style={styles.detailValue}>{queenEggLayingLabels[item.queenEggLaying]}</Text>
-        </View>
-        {item.queenColor && (
+        
+        <View style={styles.hiveDetails}>
           <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Farba matky:</Text>
-            <View style={styles.colorIndicator}>
-              <Text style={styles.detailValue}>{item.queenColor}</Text>
+            <Text style={styles.detailLabel}>Rámiky:</Text>
+            <Text style={styles.detailValue}>{item.frameCount}</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Matka:</Text>
+            <Text style={styles.detailValue}>{queenStatusLabels[item.queenStatus]}</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Kladenie vajíčok:</Text>
+            <Text style={styles.detailValue}>{queenEggLayingLabels[item.queenEggLaying]}</Text>
+          </View>
+          {item.queenColor && (
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Farba matky:</Text>
+              <View style={styles.colorIndicator}>
+                <Text style={styles.detailValue}>{item.queenColor}</Text>
+              </View>
             </View>
-          </View>
-        )}
-        {item.colonyFoundingDate && (
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Založenie rodiny:</Text>
-            <Text style={styles.detailValue}>
-              {new Date(item.colonyFoundingDate).toLocaleDateString('sk-SK')}
-            </Text>
-          </View>
-        )}
-        {item.apiaryId && (
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Vcelnica:</Text>
-            <Text style={styles.detailValue}>
-              {apiaries.find(a => a.id === item.apiaryId)?.name || 'Neznáma'}
-            </Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
+          )}
+          {item.colonyFoundingDate && (
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Založenie rodiny:</Text>
+              <Text style={styles.detailValue}>
+                {new Date(item.colonyFoundingDate).toLocaleDateString('sk-SK')}
+              </Text>
+            </View>
+          )}
+          {apiaryName && (
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Vcelnica:</Text>
+              <Text style={styles.detailValue}>
+                {apiaryName}
+              </Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const EmptyState = () => (
     <View style={styles.emptyState}>
