@@ -42,7 +42,7 @@ export default function StatisticsScreen() {
 
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [selectedYearForStats, setSelectedYearForStats] = useState(currentYear);
-  const [showHiveYields, setShowHiveYields] = useState(false);
+  const [showYields, setShowYields] = useState(false);
   const [editingYield, setEditingYield] = useState<any>(null);
   const [editAmount, setEditAmount] = useState('');
   const [editNotes, setEditNotes] = useState('');
@@ -375,49 +375,56 @@ export default function StatisticsScreen() {
           </View>
         </View>
 
-
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Výnosy podľa typu ({selectedYearForStats})</Text>
-          <View style={styles.yieldList}>
-            {Object.entries(yieldByType).map(([type, amount]) => (
-              <View key={type} style={styles.yieldItem}>
-                <Text style={styles.yieldType}>
-                  {yieldTypeLabels[type as keyof typeof yieldTypeLabels] || type}
-                </Text>
-                <Text style={styles.yieldAmount}>{amount.toFixed(1)} kg</Text>
-              </View>
-            ))}
-            {Object.keys(yieldByType).length === 0 && (
-              <View style={styles.emptyYield}>
-                <Text style={styles.emptyYieldText}>
-                  Zatiaľ neboli zaznamenané žiadne výnosy pre rok {selectedYearForStats}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-        
         <View style={styles.section}>
           <TouchableOpacity 
-            style={styles.sectionHeaderClickable}
-            onPress={() => setShowHiveYields(!showHiveYields)}
+            style={styles.statCard}
+            onPress={() => setShowYields(!showYields)}
           >
-            <View style={styles.sectionHeaderWithToggle}>
-              <Text style={styles.sectionTitle}>Výnosy podľa rodín ({selectedYearForStats})</Text>
-              {showHiveYields ? (
-                <ChevronUp color="#6b7280" size={20} />
-              ) : (
-                <ChevronDown color="#6b7280" size={20} />
-              )}
+            <View style={styles.statHeader}>
+              <View style={[styles.statIcon, { backgroundColor: '#f59e0b' }]}>
+                <BarChart3 color="#ffffff" size={20} />
+              </View>
+              <Text style={styles.statTitle}>Výnosy ({selectedYearForStats})</Text>
+              <View style={styles.toggleIcon}>
+                {showYields ? (
+                  <ChevronUp color="#6b7280" size={20} />
+                ) : (
+                  <ChevronDown color="#6b7280" size={20} />
+                )}
+              </View>
             </View>
-            <Text style={styles.sectionSubtitle}>
-              Výnosy • Kliknite pre zobrazenie/skrytie
+            <Text style={styles.statValue}>
+              {Object.values(yieldByType).reduce((sum, amount) => sum + amount, 0).toFixed(1)} kg
+            </Text>
+            <Text style={styles.statSubtitle}>
+              Celkové výnosy • Kliknite pre detaily
             </Text>
           </TouchableOpacity>
           
-          {showHiveYields && (
-            <View style={styles.hiveYieldList}>
+          {showYields && (
+            <View style={styles.yieldsContent}>
+              <View style={styles.yieldTypeSection}>
+                <Text style={styles.yieldSectionTitle}>Podľa typu</Text>
+                <View style={styles.yieldList}>
+                  {Object.entries(yieldByType).map(([type, amount]) => (
+                    <View key={type} style={styles.yieldTypeItem}>
+                      <Text style={styles.yieldTypeLabel}>
+                        {yieldTypeLabels[type as keyof typeof yieldTypeLabels] || type}
+                      </Text>
+                      <Text style={styles.yieldTypeAmount}>{amount.toFixed(1)} kg</Text>
+                    </View>
+                  ))}
+                  {Object.keys(yieldByType).length === 0 && (
+                    <Text style={styles.emptyText}>
+                      Zatiaľ neboli zaznamenané žiadne výnosy
+                    </Text>
+                  )}
+                </View>
+              </View>
+              
+              <View style={styles.yieldHiveSection}>
+                <Text style={styles.yieldSectionTitle}>Podľa rodín</Text>
+                <View style={styles.hiveYieldList}>
             {Object.entries(yieldByHive).map(([hiveName, data]) => {
               const isExpanded = expandedHives.has(hiveName);
               return (
@@ -477,14 +484,14 @@ export default function StatisticsScreen() {
                 </View>
               );
             })}
-            {Object.keys(yieldByHive).length === 0 && (
-              <View style={styles.emptyYield}>
-                <Text style={styles.emptyYieldText}>
-                  Zatiaľ neboli zaznamenané žiadne výnosy pre rok {selectedYearForStats}
-                </Text>
+                {Object.keys(yieldByHive).length === 0 && (
+                  <Text style={styles.emptyText}>
+                    Zatiaľ neboli zaznamenané žiadne výnosy
+                  </Text>
+                )}
               </View>
-            )}
             </View>
+          </View>
           )}
         </View>
 
@@ -1006,5 +1013,50 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  toggleIcon: {
+    marginLeft: 'auto',
+  },
+  yieldsContent: {
+    marginTop: 16,
+    gap: 20,
+  },
+  yieldTypeSection: {
+    gap: 12,
+  },
+  yieldHiveSection: {
+    gap: 12,
+  },
+  yieldSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  yieldTypeItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  yieldTypeLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#111827',
+  },
+  yieldTypeAmount: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#22c55e',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    padding: 16,
   },
 });
