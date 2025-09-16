@@ -152,7 +152,8 @@ export default function StatisticsScreen() {
     const filteredYields = yields.filter(yieldItem => {
       const hive = hives.find(h => h.id === yieldItem.hiveId);
       const yearMatch = year ? new Date(yieldItem.date).getFullYear() === year : true;
-      return yearMatch && hive && hive.apiaryId === currentApiaryId && !hive.isDeleted;
+      // Include yields from deleted hives too - they still count in statistics
+      return yearMatch && hive && hive.apiaryId === currentApiaryId;
     });
       
     const yieldByType = filteredYields.reduce((acc, yieldItem) => {
