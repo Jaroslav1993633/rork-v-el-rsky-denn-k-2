@@ -100,7 +100,7 @@ export default function DashboardScreen() {
               icon={Bell}
             />
             <StatCard
-              title="Úroda tento rok (kg)"
+              title="Výnos tento rok (kg)"
               value={thisYearYield.toFixed(1)}
               icon={BarChart3}
             />
