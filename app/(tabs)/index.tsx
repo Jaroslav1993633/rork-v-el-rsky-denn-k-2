@@ -400,16 +400,13 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 12,
   },
   quickActionCard: {
-    flex: 1,
-    minWidth: '45%',
     backgroundColor: '#f9fafb',
     borderRadius: 12,
     padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -420,13 +417,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginRight: 12,
   },
   quickActionCardText: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '500',
     color: '#111827',
-    textAlign: 'center',
+    flex: 1,
   },
 
   addApiaryButton: {
