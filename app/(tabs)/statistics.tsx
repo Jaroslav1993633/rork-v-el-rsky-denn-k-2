@@ -621,17 +621,7 @@ export default function StatisticsScreen() {
             
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.deleteButton]}
-                onPress={() => {
-                  if (editingYield) {
-                    handleDeleteYield(editingYield);
-                  }
-                }}
-              >
-                <Text style={styles.deleteButtonText}>Zmazať</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
+                style={[styles.modalButton, styles.saveButton, styles.fullWidthButton]}
                 onPress={handleSaveYield}
               >
                 <Text style={styles.saveButtonText}>Uložiť</Text>
@@ -1007,13 +997,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  deleteButton: {
-    backgroundColor: '#ef4444',
-  },
-  deleteButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+  fullWidthButton: {
+    flex: 0,
+    width: '100%',
   },
   toggleIcon: {
     marginLeft: 'auto',
