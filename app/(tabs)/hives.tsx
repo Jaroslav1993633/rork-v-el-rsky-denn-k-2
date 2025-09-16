@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Plus, Hexagon, ChevronRight, ClipboardList, Package, Bell } from 'lucide-react-native';
+import { Plus, Hexagon, ChevronRight } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Hive } from '@/types/beekeeping';
@@ -155,60 +155,13 @@ export default function HivesScreen() {
       {activeHives.length === 0 ? (
         <EmptyState />
       ) : (
-        <>
-          <View style={styles.quickActions}>
-            <Text style={styles.quickActionsTitle}>Rýchle akcie</Text>
-            <View style={styles.quickActionsGrid}>
-              <TouchableOpacity 
-                style={styles.quickActionCard}
-                onPress={() => router.push('/modal')}
-              >
-                <View style={styles.quickActionIcon}>
-                  <Plus color="#22c55e" size={20} />
-                </View>
-                <Text style={styles.quickActionText}>Pridať úľ</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.quickActionCard}
-                onPress={() => router.push('/quick-inspection')}
-              >
-                <View style={styles.quickActionIcon}>
-                  <ClipboardList color="#3b82f6" size={20} />
-                </View>
-                <Text style={styles.quickActionText}>Rýchla prehliadka</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.quickActionCard}
-                onPress={() => router.push('/add-harvest')}
-              >
-                <View style={styles.quickActionIcon}>
-                  <Package color="#f59e0b" size={20} />
-                </View>
-                <Text style={styles.quickActionText}>Pridať úrodu</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.quickActionCard}
-                onPress={() => router.push('/reminders')}
-              >
-                <View style={styles.quickActionIcon}>
-                  <Bell color="#8b5cf6" size={20} />
-                </View>
-                <Text style={styles.quickActionText}>Upozornenie</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          
-          <FlatList
-            data={activeHives}
-            renderItem={renderHiveItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
-          />
-        </>
+        <FlatList
+          data={activeHives}
+          renderItem={renderHiveItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+        />
       )}
     </View>
   );
@@ -350,44 +303,5 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 2,
   },
-  quickActions: {
-    padding: 20,
-    paddingBottom: 0,
-  },
-  quickActionsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  quickActionCard: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  quickActionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#ffffff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  quickActionText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#111827',
-    textAlign: 'center',
-  },
+
 });
