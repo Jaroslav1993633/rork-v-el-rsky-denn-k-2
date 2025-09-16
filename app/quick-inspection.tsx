@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   Switch,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { X, Check, Droplets, Bug, Heart } from 'lucide-react-native';
@@ -50,6 +51,7 @@ export default function QuickInspectionScreen() {
   const [selectedHiveIds, setSelectedHiveIds] = useState<string[]>([]);
   const [notes, setNotes] = useState<string>('');
   const [selectAll, setSelectAll] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   const currentConfig = ACTION_CONFIGS[actionType];
   const allowsMultiSelect = currentConfig.multiSelect;
@@ -76,7 +78,7 @@ export default function QuickInspectionScreen() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     console.log('handleSave called', { selectedHiveIds, notes: notes.trim(), actionType });
     
     if (selectedHiveIds.length === 0) {
@@ -89,10 +91,12 @@ export default function QuickInspectionScreen() {
       return;
     }
 
-    const date = new Date().toISOString();
-    const actionNotes = `[${currentConfig.label}] ${notes.trim()}`;
+    setIsSaving(true);
     
     try {
+      const date = new Date().toISOString();
+      const actionNotes = `[${currentConfig.label}] ${notes.trim()}`;
+      
       selectedHiveIds.forEach(hiveId => {
         const inspectionData = {
           hiveId,
@@ -105,21 +109,44 @@ export default function QuickInspectionScreen() {
       
       console.log('All inspections added successfully');
       
+      // Krátke čakanie pre lepší UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const selectedHiveCount = selectedHiveIds.length;
+      const hiveNames = hives
+        .filter(h => selectedHiveIds.includes(h.id))
+        .map(h => h.name)
+        .join(', ');
+      
+      const message = selectedHiveCount === 1 
+        ? `${currentConfig.label} bola úspešne uložená pre úľ: ${hiveNames}`
+        : `${currentConfig.label} bola úspešne uložená pre ${selectedHiveCount} úľov: ${hiveNames}`;
+      
+      // Reset formulára
       setNotes('');
       setSelectedHiveIds([]);
       setSelectAll(false);
       
-      const message = selectedHiveIds.length === 1 
-        ? `${currentConfig.label} bola úspešne uložená pre úľ`
-        : `${currentConfig.label} bola úspešne uložená pre ${selectedHiveIds.length} úľov`;
-      
-      Alert.alert('✅ Uložené!', message, [
-        { text: 'Pokračovať', onPress: () => router.back() },
-        { text: 'Pridať ďalšiu', style: 'cancel' }
-      ]);
+      Alert.alert(
+        '✅ Úspešne uložené!', 
+        message, 
+        [
+          { 
+            text: 'Späť na prehľad', 
+            onPress: () => router.back(),
+            style: 'default'
+          },
+          { 
+            text: 'Pridať ďalšiu akciu', 
+            style: 'cancel' 
+          }
+        ]
+      );
     } catch (error) {
       console.error('Error adding inspections:', error);
-      Alert.alert('Chyba', `Nepodarilo sa pridať ${currentConfig.label.toLowerCase()}`);
+      Alert.alert('❌ Chyba', `Nepodarilo sa uložiť ${currentConfig.label.toLowerCase()}. Skúste to znovu.`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -130,8 +157,16 @@ export default function QuickInspectionScreen() {
           <X color="#6b7280" size={24} />
         </TouchableOpacity>
         <Text style={styles.title}>Rýchla prehliadka</Text>
-        <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-          <Check color="#22c55e" size={24} />
+        <TouchableOpacity 
+          onPress={handleSave} 
+          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#22c55e" />
+          ) : (
+            <Check color="#22c55e" size={24} />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -376,5 +411,8 @@ const styles = StyleSheet.create({
   selectAllLabel: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
 });
