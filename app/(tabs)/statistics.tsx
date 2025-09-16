@@ -43,6 +43,7 @@ export default function StatisticsScreen() {
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [selectedYearForStats, setSelectedYearForStats] = useState(currentYear);
   const [showYields, setShowYields] = useState(false);
+  const [showYieldTypes, setShowYieldTypes] = useState(false);
   const [editingYield, setEditingYield] = useState<any>(null);
   const [editAmount, setEditAmount] = useState('');
   const [editNotes, setEditNotes] = useState('');
@@ -365,13 +366,45 @@ export default function StatisticsScreen() {
               icon={TrendingUp}
               color="#f59e0b"
             />
-            <StatCard
-              title={`Výnosy ${selectedYearForStats}`}
-              value={`${getYieldByType(selectedYearForStats).med || 0} kg medu`}
-              subtitle={`Celkové výnosy: ${Object.values(getYieldByType(selectedYearForStats)).reduce((sum, amount) => sum + amount, 0).toFixed(1)} kg`}
-              icon={BarChart3}
-              color="#8b5cf6"
-            />
+            <TouchableOpacity 
+              style={styles.statCard}
+              onPress={() => setShowYieldTypes(!showYieldTypes)}
+            >
+              <View style={styles.statHeader}>
+                <View style={[styles.statIcon, { backgroundColor: '#8b5cf6' }]}>
+                  <BarChart3 color="#ffffff" size={20} />
+                </View>
+                <Text style={styles.statTitle}>Výnosy {selectedYearForStats}</Text>
+                <View style={styles.toggleIcon}>
+                  {showYieldTypes ? (
+                    <ChevronUp color="#6b7280" size={20} />
+                  ) : (
+                    <ChevronDown color="#6b7280" size={20} />
+                  )}
+                </View>
+              </View>
+              <Text style={styles.statValue}>
+                {Object.values(getYieldByType(selectedYearForStats)).reduce((sum, amount) => sum + amount, 0).toFixed(1)} kg
+              </Text>
+              <Text style={styles.statSubtitle}>Celkové výnosy</Text>
+              {showYieldTypes && (
+                <View style={styles.yieldTypesDropdown}>
+                  {Object.entries(getYieldByType(selectedYearForStats)).map(([type, amount]) => (
+                    <View key={type} style={styles.yieldTypeDropdownItem}>
+                      <Text style={styles.yieldTypeDropdownLabel}>
+                        {yieldTypeLabels[type as keyof typeof yieldTypeLabels] || type}
+                      </Text>
+                      <Text style={styles.yieldTypeDropdownAmount}>{amount.toFixed(1)} kg</Text>
+                    </View>
+                  ))}
+                  {Object.keys(getYieldByType(selectedYearForStats)).length === 0 && (
+                    <Text style={styles.emptyDropdownText}>
+                      Žiadne výnosy
+                    </Text>
+                  )}
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -384,7 +417,7 @@ export default function StatisticsScreen() {
               <View style={[styles.statIcon, { backgroundColor: '#f59e0b' }]}>
                 <BarChart3 color="#ffffff" size={20} />
               </View>
-              <Text style={styles.statTitle}>Výnosy ({selectedYearForStats})</Text>
+              <Text style={styles.statTitle}>Výnosy podľa rodín ({selectedYearForStats})</Text>
               <View style={styles.toggleIcon}>
                 {showYields ? (
                   <ChevronUp color="#6b7280" size={20} />
@@ -403,29 +436,8 @@ export default function StatisticsScreen() {
           
           {showYields && (
             <View style={styles.yieldsContent}>
-              <View style={styles.yieldTypeSection}>
-                <Text style={styles.yieldSectionTitle}>Podľa typu</Text>
-                <View style={styles.yieldList}>
-                  {Object.entries(yieldByType).map(([type, amount]) => (
-                    <View key={type} style={styles.yieldTypeItem}>
-                      <Text style={styles.yieldTypeLabel}>
-                        {yieldTypeLabels[type as keyof typeof yieldTypeLabels] || type}
-                      </Text>
-                      <Text style={styles.yieldTypeAmount}>{amount.toFixed(1)} kg</Text>
-                    </View>
-                  ))}
-                  {Object.keys(yieldByType).length === 0 && (
-                    <Text style={styles.emptyText}>
-                      Zatiaľ neboli zaznamenané žiadne výnosy
-                    </Text>
-                  )}
-                </View>
-              </View>
-              
-              <View style={styles.yieldHiveSection}>
-                <Text style={styles.yieldSectionTitle}>Podľa rodín</Text>
-                <View style={styles.hiveYieldList}>
-            {Object.entries(yieldByHive).map(([hiveName, data]) => {
+              <View style={styles.hiveYieldList}>
+                {Object.entries(yieldByHive).map(([hiveName, data]) => {
               const isExpanded = expandedHives.has(hiveName);
               return (
                 <View key={hiveName} style={styles.hiveYieldItem}>
@@ -491,7 +503,6 @@ export default function StatisticsScreen() {
                 )}
               </View>
             </View>
-          </View>
           )}
         </View>
 
@@ -1058,5 +1069,33 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     padding: 16,
+  },
+  yieldTypesDropdown: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    gap: 8,
+  },
+  yieldTypeDropdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  yieldTypeDropdownLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  yieldTypeDropdownAmount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#22c55e',
+  },
+  emptyDropdownText: {
+    fontSize: 13,
+    color: '#9ca3af',
+    textAlign: 'center',
+    paddingVertical: 4,
   },
 });
