@@ -12,13 +12,6 @@ import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { MapPin, Edit3, Save, X } from 'lucide-react-native';
 import * as Location from 'expo-location';
 
-// Extend Window interface for Google Maps
-declare global {
-  interface Window {
-    google: any;
-  }
-}
-
 interface MapViewProps {
   location: {
     latitude: number;
@@ -29,88 +22,177 @@ interface MapViewProps {
   isEditing: boolean;
 }
 
-// Web Map Component
-const WebMapView: React.FC<MapViewProps> = ({ location, onLocationChange, isEditing }) => {
-  const [mapLoaded, setMapLoaded] = useState(false);
+// Simple coordinate-based map visualization
+const SimpleMapView: React.FC<MapViewProps> = ({ location, onLocationChange, isEditing }) => {
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
   
-  const initializeMap = React.useCallback(() => {
-    const mapElement = document.getElementById('google-map');
-    if (!mapElement || !window.google) return;
-    
-    const map = new window.google.maps.Map(mapElement, {
-      center: { lat: location.latitude, lng: location.longitude },
-      zoom: 13,
-      mapTypeId: 'satellite',
+  const handleMouseDown = (event: any) => {
+    if (!isEditing) return;
+    setIsDragging(true);
+    const rect = event.currentTarget.getBoundingClientRect();
+    setDragPosition({
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
     });
+  };
+  
+  const handleMouseMove = (event: any) => {
+    if (!isDragging || !isEditing) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const newX = event.clientX - rect.left;
+    const newY = event.clientY - rect.top;
     
-    // Add marker for apiary
-    const marker = new window.google.maps.Marker({
-      position: { lat: location.latitude, lng: location.longitude },
-      map: map,
-      title: 'Včelnica',
-      draggable: isEditing,
-    });
+    // Keep within bounds
+    const boundedX = Math.max(20, Math.min(rect.width - 20, newX));
+    const boundedY = Math.max(20, Math.min(rect.height - 20, newY));
     
-    // Add flight radius circles
-    const circles = [
-      { radius: 2000, color: '#22c55e' },
-      { radius: 3500, color: '#f59e0b' },
-      { radius: 5000, color: '#ef4444' },
-    ];
+    setDragPosition({ x: boundedX, y: boundedY });
     
-    circles.forEach(({ radius, color }) => {
-      new window.google.maps.Circle({
-        strokeColor: color,
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: color,
-        fillOpacity: 0.15,
-        map: map,
-        center: { lat: location.latitude, lng: location.longitude },
-        radius: radius,
-      });
-    });
-    
-    if (isEditing && onLocationChange) {
-      marker.addListener('dragend', (event: any) => {
-        const newLat = event.latLng.lat();
-        const newLng = event.latLng.lng();
-        onLocationChange({
-          latitude: newLat,
-          longitude: newLng,
-        });
+    // Convert position to approximate coordinates (simplified)
+    if (onLocationChange) {
+      const latOffset = (boundedY - rect.height / 2) * -0.001;
+      const lngOffset = (boundedX - rect.width / 2) * 0.001;
+      onLocationChange({
+        latitude: location.latitude + latOffset,
+        longitude: location.longitude + lngOffset,
       });
     }
-  }, [location, isEditing, onLocationChange]);
+  };
+  
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
   
   useEffect(() => {
-    // Load Google Maps API for web
-    if (typeof window !== 'undefined' && !window.google) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTuTlWnAGHEFHYttlxlXRIe0&libraries=geometry`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setMapLoaded(true);
-      document.head.appendChild(script);
-    } else if (window.google) {
-      setMapLoaded(true);
-    }
-  }, []);
-  
-  useEffect(() => {
-    if (mapLoaded && location) {
-      initializeMap();
-    }
-  }, [mapLoaded, location, initializeMap]);
+    // Reset drag position when location changes externally
+    setDragPosition({ x: 0, y: 0 });
+  }, [location]);
   
   return (
     <div
-      id="google-map"
-      style={styles.webMapContainer}
+      style={{
+        ...styles.webMapContainer,
+        position: 'relative',
+        background: 'linear-gradient(135deg, #e8f5e8 0%, #f0f9ff 100%)',
+        cursor: isEditing ? 'crosshair' : 'default',
+      }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
     >
-      {!mapLoaded && (
-        <div style={styles.webMapLoading}>
-          <Text>Načítava sa mapa...</Text>
+      {/* Flight radius circles */}
+      <div style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '300px',
+        height: '300px',
+        borderRadius: '50%',
+        border: '2px solid #ef4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        opacity: 0.7,
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '210px',
+        height: '210px',
+        borderRadius: '50%',
+        border: '2px solid #f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        opacity: 0.8,
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '120px',
+        height: '120px',
+        borderRadius: '50%',
+        border: '2px solid #22c55e',
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        opacity: 0.9,
+      }} />
+      
+      {/* Apiary marker */}
+      <div style={{
+        position: 'absolute',
+        top: dragPosition.y || '50%',
+        left: dragPosition.x || '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '24px',
+        height: '24px',
+        backgroundColor: '#22c55e',
+        borderRadius: '50%',
+        border: '3px solid white',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        cursor: isEditing ? 'grab' : 'default',
+        zIndex: 10,
+      }} />
+      
+      {/* Coordinate display */}
+      <div style={{
+        position: 'absolute',
+        bottom: '16px',
+        left: '16px',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        padding: '8px 12px',
+        borderRadius: '6px',
+        fontSize: '12px',
+        fontFamily: 'monospace',
+        color: '#374151',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      }}>
+        {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+      </div>
+      
+      {/* Legend */}
+      <div style={{
+        position: 'absolute',
+        top: '16px',
+        right: '16px',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        padding: '12px',
+        borderRadius: '8px',
+        fontSize: '12px',
+        color: '#374151',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        minWidth: '180px',
+      }}>
+        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Letové vzdialenosti:</div>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+          <div style={{ width: '12px', height: '12px', backgroundColor: '#22c55e', borderRadius: '50%', marginRight: '8px' }} />
+          <span>2 km - efektívna</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
+          <div style={{ width: '12px', height: '12px', backgroundColor: '#f59e0b', borderRadius: '50%', marginRight: '8px' }} />
+          <span>3,5 km - dobrá</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ width: '12px', height: '12px', backgroundColor: '#ef4444', borderRadius: '50%', marginRight: '8px' }} />
+          <span>5 km - neefektívna</span>
+        </div>
+      </div>
+      
+      {isEditing && (
+        <div style={{
+          position: 'absolute',
+          bottom: '16px',
+          right: '16px',
+          backgroundColor: 'rgba(59, 130, 246, 0.9)',
+          color: 'white',
+          padding: '8px 12px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        }}>
+          Kliknite a ťahajte pre zmenu polohy
         </div>
       )}
     </div>
@@ -175,7 +257,7 @@ const MobileMapView: React.FC<MapViewProps> = ({ location }) => {
 };
 
 // Platform-specific map component
-const MapViewComponent = Platform.OS === 'web' ? WebMapView : MobileMapView;
+const MapViewComponent = Platform.OS === 'web' ? SimpleMapView : MobileMapView;
 
 export default function MapScreen() {
   const { getCurrentApiary, updateApiary } = useBeekeeping();
@@ -510,9 +592,6 @@ const styles = StyleSheet.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-  } as any,
-  webMapLoading: {
-    textAlign: 'center',
-    color: '#6b7280',
+    overflow: 'hidden',
   } as any,
 });
