@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { AppState, Hive, Inspection, Task, Yield, MonthlyStats, YearlyStats } from '@/types/beekeeping';
+import type { AppState, Hive, Inspection, Task, Yield, MonthlyStats, YearlyStats, Apiary } from '@/types/beekeeping';
 import { sampleHives, sampleInspections, sampleTasks, sampleYields } from '@/mocks/sample-data';
 
 const STORAGE_KEY = 'beekeeping_data';
@@ -14,6 +14,7 @@ const initialState: AppState = {
   yields: [],
   monthlyStats: [],
   yearlyStats: [],
+  apiaries: [],
   trialStartDate: null,
   isRegistered: false,
 };
@@ -46,6 +47,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
           yields: sampleYields,
           monthlyStats: [],
           yearlyStats: [],
+          apiaries: [],
           trialStartDate: new Date().toISOString(),
         };
         setState(newState);
@@ -412,7 +414,32 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     };
   }, [state.monthlyStats, state.yearlyStats]);
 
+  // Apiary management
+  const addApiary = useCallback((apiary: Omit<Apiary, 'id' | 'createdAt'>) => {
+    const newApiary: Apiary = {
+      ...apiary,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+    };
+    updateState(prevState => ({ apiaries: [...(prevState.apiaries || []), newApiary] }));
+  }, [updateState]);
 
+  const updateApiary = useCallback((id: string, updates: Partial<Apiary>) => {
+    updateState(prevState => ({
+      apiaries: (prevState.apiaries || []).map(apiary =>
+        apiary.id === id ? { ...apiary, ...updates } : apiary
+      )
+    }));
+  }, [updateState]);
+
+  const deleteApiary = useCallback((id: string) => {
+    updateState(prevState => ({
+      apiaries: (prevState.apiaries || []).filter(apiary => apiary.id !== id),
+      hives: (prevState.hives || []).map(hive =>
+        hive.apiaryId === id ? { ...hive, apiaryId: undefined } : hive
+      )
+    }));
+  }, [updateState]);
 
   return useMemo(() => ({
     ...state,
@@ -456,6 +483,11 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     resetMonthlyStats,
     resetYearlyStats,
     getHistoricalStats,
+    
+    // Apiary methods
+    addApiary,
+    updateApiary,
+    deleteApiary,
   }), [
     state,
     isLoading,
@@ -484,5 +516,8 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     resetMonthlyStats,
     resetYearlyStats,
     getHistoricalStats,
+    addApiary,
+    updateApiary,
+    deleteApiary,
   ]);
 });

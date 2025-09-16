@@ -42,7 +42,7 @@ const queenColors = [
 ];
 
 export default function AddHiveModal() {
-  const { addHive } = useBeekeeping();
+  const { addHive, apiaries } = useBeekeeping();
   
   const [name, setName] = useState('');
   const [type, setType] = useState<'odlozenec' | 'roj' | 'zabehnutaRodina' | 'kupeneVcelstvo'>('odlozenec');
@@ -52,6 +52,7 @@ export default function AddHiveModal() {
   const [queenColorName, setQueenColorName] = useState('Neoznačená');
   const [queenEggLayingStatus, setQueenEggLayingStatus] = useState<'lozi' | 'nelozi'>('lozi');
   const [colonyFoundingDate, setColonyFoundingDate] = useState('');
+  const [selectedApiaryId, setSelectedApiaryId] = useState<string | undefined>(undefined);
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -103,6 +104,7 @@ export default function AddHiveModal() {
       queenColor: queenColorName,
       queenEggLaying: queenEggLayingStatus,
       colonyFoundingDate: foundingDate.toISOString(),
+      apiaryId: selectedApiaryId,
     });
 
     router.back();
@@ -207,6 +209,45 @@ export default function AddHiveModal() {
     </View>
   );
 
+  const ApiarySelector = () => (
+    <View style={styles.selectorContainer}>
+      <Text style={styles.label}>Vcelnica (voliteľné)</Text>
+      <View style={styles.statusGrid}>
+        <TouchableOpacity
+          style={[
+            styles.statusOption,
+            selectedApiaryId === undefined && styles.selectedStatus,
+          ]}
+          onPress={() => setSelectedApiaryId(undefined)}
+        >
+          <Text style={[
+            styles.statusText,
+            selectedApiaryId === undefined && styles.selectedStatusText,
+          ]}>
+            Bez vcelnice
+          </Text>
+        </TouchableOpacity>
+        {apiaries.map((apiary) => (
+          <TouchableOpacity
+            key={apiary.id}
+            style={[
+              styles.statusOption,
+              selectedApiaryId === apiary.id && styles.selectedStatus,
+            ]}
+            onPress={() => setSelectedApiaryId(apiary.id)}
+          >
+            <Text style={[
+              styles.statusText,
+              selectedApiaryId === apiary.id && styles.selectedStatusText,
+            ]}>
+              {apiary.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+
   return (
     <Modal
       animationType="slide"
@@ -274,6 +315,8 @@ export default function AddHiveModal() {
             <QueenEggLayingSelector />
 
             <ColorSelector />
+
+            <ApiarySelector />
           </ScrollView>
 
           <View style={styles.footer}>

@@ -10,6 +10,7 @@ export interface Hive {
   createdAt: string;
   isDeleted?: boolean;
   deletedAt?: string;
+  apiaryId?: string;
 }
 
 export interface Inspection {
@@ -40,6 +41,18 @@ export interface Yield {
   notes?: string;
 }
 
+export interface Apiary {
+  id: string;
+  name: string;
+  location: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  description?: string;
+  createdAt: string;
+}
+
 export interface MonthlyStats {
   year: number;
   month: number;
@@ -61,6 +74,7 @@ export interface AppState {
   yields: Yield[];
   monthlyStats: MonthlyStats[];
   yearlyStats: YearlyStats[];
+  apiaries: Apiary[];
   trialStartDate: string | null;
   isRegistered: boolean;
 }

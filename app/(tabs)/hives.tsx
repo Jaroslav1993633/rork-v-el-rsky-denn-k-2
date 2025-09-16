@@ -31,7 +31,7 @@ const queenStatusLabels = {
 };
 
 export default function HivesScreen() {
-  const { hives } = useBeekeeping();
+  const { hives, apiaries } = useBeekeeping();
   const insets = useSafeAreaInsets();
 
   // Filter out deleted hives
@@ -84,6 +84,14 @@ export default function HivesScreen() {
             <Text style={styles.detailLabel}>Založenie rodiny:</Text>
             <Text style={styles.detailValue}>
               {new Date(item.colonyFoundingDate).toLocaleDateString('sk-SK')}
+            </Text>
+          </View>
+        )}
+        {item.apiaryId && (
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Vcelnica:</Text>
+            <Text style={styles.detailValue}>
+              {apiaries.find(a => a.id === item.apiaryId)?.name || 'Neznáma'}
             </Text>
           </View>
         )}
