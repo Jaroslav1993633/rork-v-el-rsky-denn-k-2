@@ -28,7 +28,6 @@ const hiveTypeLabels = {
   roj: 'Roj',
   zabehnutaRodina: 'Zabehnutá rodina',
   kupeneVcelstvo: 'Kúpené včelstvo',
-  ine: 'Iné',
 };
 
 const queenStatusLabels = {
@@ -70,7 +69,8 @@ export default function HiveDetailScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editFrameCount, setEditFrameCount] = useState('');
-  const [editType, setEditType] = useState<'odlozenec' | 'roj' | 'zabehnutaRodina' | 'kupeneVcelstvo' | 'ine'>('zabehnutaRodina');
+  const [editType, setEditType] = useState<'odlozenec' | 'roj' | 'zabehnutaRodina' | 'kupeneVcelstvo'>('zabehnutaRodina');
+  const [editQueenEggLaying, setEditQueenEggLaying] = useState<'lozi' | 'nelozi'>('lozi');
   const [editQueenStatus, setEditQueenStatus] = useState<'stara' | 'nova' | 'vylahne'>('stara');
   const [editQueenColor, setEditQueenColor] = useState('');
   const [editColonyFoundingDate, setEditColonyFoundingDate] = useState('');
@@ -109,9 +109,13 @@ export default function HiveDetailScreen() {
   const handleEdit = () => {
     setEditName(hive.name);
     setEditFrameCount(hive.frameCount.toString());
-    setEditType(hive.type);
+    // If hive has 'ine' type (old data), default to 'zabehnutaRodina'
+    const validTypes = ['odlozenec', 'roj', 'zabehnutaRodina', 'kupeneVcelstvo'] as const;
+    const typeToSet = validTypes.includes(hive.type as any) ? hive.type : 'zabehnutaRodina';
+    setEditType(typeToSet as any);
     setEditQueenStatus(hive.queenStatus);
     setEditQueenColor(hive.queenColor);
+    setEditQueenEggLaying(hive.queenEggLaying ?? 'lozi');
     
     const foundingDate = new Date(hive.colonyFoundingDate);
     const formattedFoundingDate = `${foundingDate.getDate().toString().padStart(2, '0')}.${(foundingDate.getMonth() + 1).toString().padStart(2, '0')}.${foundingDate.getFullYear()}`;
@@ -171,6 +175,7 @@ export default function HiveDetailScreen() {
       type: editType,
       queenStatus: editQueenStatus,
       queenColor: editQueenColor,
+      queenEggLaying: editQueenEggLaying,
       colonyFoundingDate: foundingDate.toISOString(),
     });
     setIsEditing(false);
@@ -464,7 +469,7 @@ export default function HiveDetailScreen() {
           {isEditing ? (
             <View style={styles.editForm}>
               <View style={styles.editRow}>
-                <Text style={styles.editLabel}>Typ úľa:</Text>
+                <Text style={styles.editLabel}>Typ rodiny:</Text>
                 <View style={styles.typeSelector}>
                   {Object.entries(hiveTypeLabels).map(([key, label]) => (
                     <TouchableOpacity
@@ -521,6 +526,18 @@ export default function HiveDetailScreen() {
               </View>
               
               <View style={styles.editRow}>
+                <TouchableOpacity 
+                  style={styles.checkboxRow}
+                  onPress={() => setEditQueenEggLaying(editQueenEggLaying === 'lozi' ? 'nelozi' : 'lozi')}
+                >
+                  <View style={[styles.checkbox, editQueenEggLaying === 'lozi' && styles.checkboxChecked]}>
+                    {editQueenEggLaying === 'lozi' && <Text style={styles.checkmark}>✓</Text>}
+                  </View>
+                  <Text style={styles.checkboxLabel}>Matka loží</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.editRow}>
                 <Text style={styles.editLabel}>Farba matky:</Text>
                 <View style={styles.colorSelector}>
                   {queenColors.map((color) => (
@@ -557,8 +574,8 @@ export default function HiveDetailScreen() {
           ) : (
             <View style={styles.infoGrid}>
               <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Typ úľa:</Text>
-                <Text style={styles.infoValue}>{hiveTypeLabels[hive.type]}</Text>
+                <Text style={styles.infoLabel}>Typ rodiny:</Text>
+                <Text style={styles.infoValue}>{hiveTypeLabels[hive.type] || 'Iné'}</Text>
               </View>
               <View style={styles.infoItem}>
                 <Text style={styles.infoLabel}>Počet rámikov:</Text>
@@ -571,6 +588,10 @@ export default function HiveDetailScreen() {
               <View style={styles.infoItem}>
                 <Text style={styles.infoLabel}>Farba matky:</Text>
                 <Text style={styles.infoValue}>{hive.queenColor}</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Matka loží:</Text>
+                <Text style={styles.infoValue}>{(hive.queenEggLaying ?? 'lozi') === 'lozi' ? 'Áno' : 'Nie'}</Text>
               </View>
               <View style={styles.infoItem}>
                 <Text style={styles.infoLabel}>Dátum založenia rodiny:</Text>
@@ -1278,5 +1299,34 @@ const styles = StyleSheet.create({
   },
   editYieldForm: {
     gap: 12,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    borderRadius: 4,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#22c55e',
+    borderColor: '#22c55e',
+  },
+  checkmark: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: '#374151',
   },
 });
