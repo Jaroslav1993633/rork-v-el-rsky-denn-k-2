@@ -9,7 +9,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { BarChart3, TrendingUp, Hexagon, Calendar, RotateCcw, ChevronDown, ChevronUp, Plus, CalendarDays, Edit3, X } from 'lucide-react-native';
+import { BarChart3, TrendingUp, Hexagon, Calendar, RotateCcw, ChevronDown, ChevronUp, Plus, CalendarDays, Edit3, X, Pencil } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -44,6 +44,7 @@ export default function StatisticsScreen() {
   const [editingYield, setEditingYield] = useState<any>(null);
   const [editAmount, setEditAmount] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  const [expandedHives, setExpandedHives] = useState<Set<string>>(new Set());
 
   const thisMonthInspections = getThisMonthInspections();
   const thisYearYield = getThisYearYield();
@@ -260,6 +261,16 @@ export default function StatisticsScreen() {
     setEditNotes('');
   };
 
+  const toggleHiveExpansion = (hiveName: string) => {
+    const newExpanded = new Set(expandedHives);
+    if (newExpanded.has(hiveName)) {
+      newExpanded.delete(hiveName);
+    } else {
+      newExpanded.add(hiveName);
+    }
+    setExpandedHives(newExpanded);
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -384,46 +395,76 @@ export default function StatisticsScreen() {
           
           {showHiveYields && (
             <View style={styles.hiveYieldList}>
-            {Object.entries(yieldByHive).map(([hiveName, data]) => (
-              <View key={hiveName} style={styles.hiveYieldItem}>
-                <View style={styles.hiveYieldHeader}>
-                  <Text style={styles.hiveYieldName}>{hiveName}</Text>
-                  <Text style={styles.hiveYieldTotal}>{data.total.toFixed(1)} kg</Text>
-                </View>
-                <View style={styles.hiveYieldBreakdown}>
-                  {Object.entries(data.byType).map(([type, amount]) => (
-                    <Text key={type} style={styles.hiveYieldType}>
-                      {yieldTypeLabels[type as keyof typeof yieldTypeLabels] || type}: {amount.toFixed(1)} kg
-                    </Text>
-                  ))}
-                </View>
-                <View style={styles.yieldItemsList}>
-                  {data.yields.map((yieldItem: any) => (
-                    <View key={yieldItem.id} style={styles.individualYieldItem}>
-                      <View style={styles.yieldItemInfo}>
-                        <Text style={styles.yieldItemDate}>
-                          {new Date(yieldItem.date).toLocaleDateString('sk-SK')}
-                        </Text>
-                        <Text style={styles.yieldItemDetails}>
-                          {yieldTypeLabels[yieldItem.type as keyof typeof yieldTypeLabels] || yieldItem.type}: {yieldItem.amount} kg
-                        </Text>
-                        {yieldItem.notes && (
-                          <Text style={styles.yieldItemNotes}>{yieldItem.notes}</Text>
+            {Object.entries(yieldByHive).map(([hiveName, data]) => {
+              const isExpanded = expandedHives.has(hiveName);
+              return (
+                <View key={hiveName} style={styles.hiveYieldItem}>
+                  <TouchableOpacity 
+                    style={styles.hiveYieldHeader}
+                    onPress={() => toggleHiveExpansion(hiveName)}
+                  >
+                    <View style={styles.hiveYieldHeaderContent}>
+                      <Text style={styles.hiveYieldName}>{hiveName}</Text>
+                      <View style={styles.hiveYieldHeaderRight}>
+                        <TouchableOpacity
+                          style={styles.editHiveButton}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            if (data.yields.length > 0) {
+                              handleEditYield(data.yields[0]);
+                            }
+                          }}
+                        >
+                          <Pencil color="#6b7280" size={14} />
+                        </TouchableOpacity>
+                        <Text style={styles.hiveYieldTotal}>{data.total.toFixed(1)} kg</Text>
+                        {isExpanded ? (
+                          <ChevronUp color="#6b7280" size={16} />
+                        ) : (
+                          <ChevronDown color="#6b7280" size={16} />
                         )}
                       </View>
-                      <View style={styles.yieldItemActions}>
-                        <TouchableOpacity
-                          style={styles.editButton}
-                          onPress={() => handleEditYield(yieldItem)}
-                        >
-                          <Edit3 color="#3b82f6" size={16} />
-                        </TouchableOpacity>
-                      </View>
                     </View>
-                  ))}
+                  </TouchableOpacity>
+                  
+                  <View style={styles.hiveYieldBreakdown}>
+                    {Object.entries(data.byType).map(([type, amount]) => (
+                      <Text key={type} style={styles.hiveYieldType}>
+                        {yieldTypeLabels[type as keyof typeof yieldTypeLabels] || type}: {amount.toFixed(1)} kg
+                      </Text>
+                    ))}
+                  </View>
+                  
+                  {isExpanded && (
+                    <View style={styles.yieldItemsList}>
+                      {data.yields.map((yieldItem: any) => (
+                        <View key={yieldItem.id} style={styles.individualYieldItem}>
+                          <View style={styles.yieldItemInfo}>
+                            <Text style={styles.yieldItemDate}>
+                              {new Date(yieldItem.date).toLocaleDateString('sk-SK')}
+                            </Text>
+                            <Text style={styles.yieldItemDetails}>
+                              {yieldTypeLabels[yieldItem.type as keyof typeof yieldTypeLabels] || yieldItem.type}: {yieldItem.amount} kg
+                            </Text>
+                            {yieldItem.notes && (
+                              <Text style={styles.yieldItemNotes}>{yieldItem.notes}</Text>
+                            )}
+                          </View>
+                          <View style={styles.yieldItemActions}>
+                            <TouchableOpacity
+                              style={styles.editButton}
+                              onPress={() => handleEditYield(yieldItem)}
+                            >
+                              <Edit3 color="#3b82f6" size={16} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
-              </View>
-            ))}
+              );
+            })}
             {Object.keys(yieldByHive).length === 0 && (
               <View style={styles.emptyYield}>
                 <Text style={styles.emptyYieldText}>
@@ -795,10 +836,17 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   hiveYieldHeader: {
+    marginBottom: 8,
+  },
+  hiveYieldHeaderContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+  },
+  hiveYieldHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   hiveYieldName: {
     fontSize: 16,
@@ -858,6 +906,11 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 6,
     backgroundColor: '#eff6ff',
+  },
+  editHiveButton: {
+    padding: 4,
+    borderRadius: 4,
+    backgroundColor: '#f3f4f6',
   },
   modalOverlay: {
     flex: 1,
