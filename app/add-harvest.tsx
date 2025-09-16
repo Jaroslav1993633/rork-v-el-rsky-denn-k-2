@@ -135,7 +135,7 @@ export default function AddHarvestScreen() {
               Vybrané: {selectedHiveIds.length} {selectedHiveIds.length === 1 ? 'úľ' : 'úľov'}
             </Text>
           )}
-          <Text style={styles.debugText}>Debug: Úľe k dispozícii: {hives.length}</Text>
+
           {hives.length === 0 ? (
             <View style={styles.noHivesContainer}>
               <Text style={styles.noHivesText}>

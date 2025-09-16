@@ -37,6 +37,21 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
         const data = JSON.parse(stored);
+        
+        // Migration: Ensure all hives have apiaryId
+        if (data.hives && data.apiaries && data.apiaries.length > 0) {
+          const defaultApiaryId = data.currentApiaryId || data.apiaries[0].id;
+          data.hives = data.hives.map((hive: Hive) => ({
+            ...hive,
+            apiaryId: hive.apiaryId || defaultApiaryId
+          }));
+          
+          // Ensure currentApiaryId is set
+          if (!data.currentApiaryId) {
+            data.currentApiaryId = data.apiaries[0].id;
+          }
+        }
+        
         setState(data);
       } else {
         // First time user - start trial with sample data
