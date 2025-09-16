@@ -35,6 +35,12 @@ export default function AddHarvestScreen() {
   ];
 
   const handleSave = () => {
+    console.log('handleSave called');
+    console.log('selectedHiveIds:', selectedHiveIds);
+    console.log('amount:', amount);
+    console.log('yieldType:', yieldType);
+    console.log('date:', date);
+    
     if (selectedHiveIds.length === 0) {
       Alert.alert('Chyba', 'Vyberte aspoň jeden úľ');
       return;
@@ -45,23 +51,31 @@ export default function AddHarvestScreen() {
       return;
     }
 
-    const amountPerHive = Number(amount) / selectedHiveIds.length;
+    try {
+      const amountPerHive = Number(amount) / selectedHiveIds.length;
+      console.log('amountPerHive:', amountPerHive);
 
-    selectedHiveIds.forEach(hiveId => {
-      addYield({
-        hiveId,
-        type: yieldType,
-        amount: amountPerHive,
-        unit: 'kg',
-        date: new Date(date).toISOString(),
-        notes: notes.trim() || undefined,
+      selectedHiveIds.forEach(hiveId => {
+        const yieldData = {
+          hiveId,
+          type: yieldType,
+          amount: amountPerHive,
+          unit: 'kg',
+          date: new Date(date).toISOString(),
+          notes: notes.trim() || undefined,
+        };
+        console.log('Adding yield:', yieldData);
+        addYield(yieldData);
       });
-    });
 
-    const hiveText = selectedHiveIds.length === 1 ? 'úľa' : `${selectedHiveIds.length} úľov`;
-    Alert.alert('Úspech', `Výnos bol pridaný pre ${hiveText}`, [
-      { text: 'OK', onPress: () => router.back() }
-    ]);
+      const hiveText = selectedHiveIds.length === 1 ? 'úľa' : `${selectedHiveIds.length} úľov`;
+      Alert.alert('Úspech', `Výnos bol pridaný pre ${hiveText}`, [
+        { text: 'OK', onPress: () => router.back() }
+      ]);
+    } catch (error) {
+      console.error('Error saving yield:', error);
+      Alert.alert('Chyba', 'Nepodarilo sa uložiť výnos');
+    }
   };
 
   const formatDate = (dateString: string) => {
