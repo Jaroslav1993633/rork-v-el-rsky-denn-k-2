@@ -22,11 +22,22 @@ export default function RemindersScreen() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskDate, setNewTaskDate] = useState('');
-  const [selectedHiveId, setSelectedHiveId] = useState('');
+  const [selectedHiveIds, setSelectedHiveIds] = useState<string[]>([]);
 
   const getHiveName = (hiveId: string) => {
     const hive = hives.find(h => h.id === hiveId);
     return hive?.name || 'Neznámy úľ';
+  };
+
+  const getHiveNames = (task: Task) => {
+    // Use hiveIds if available, otherwise fall back to single hiveId
+    const ids = task.hiveIds || [task.hiveId];
+    const names = ids.map(id => getHiveName(id));
+    
+    if (names.length === 0) return 'Neznámy úľ';
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return names.join(' a ');
+    return `${names.slice(0, -1).join(', ')} a ${names[names.length - 1]}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -50,8 +61,8 @@ export default function RemindersScreen() {
   };
 
   const handleSaveTask = () => {
-    if (!newTaskTitle.trim() || !newTaskDate.trim() || !selectedHiveId) {
-      Alert.alert('Chyba', 'Vyplňte všetky povinné polia');
+    if (!newTaskTitle.trim() || !newTaskDate.trim() || selectedHiveIds.length === 0) {
+      Alert.alert('Chyba', 'Vyplňte všetky povinné polia a vyberte aspoň jeden úľ');
       return;
     }
 
@@ -85,16 +96,31 @@ export default function RemindersScreen() {
         title: newTaskTitle.trim(),
         description: newTaskDescription.trim(),
         dueDate: dueDate.toISOString(),
-        hiveId: selectedHiveId,
+        hiveId: selectedHiveIds[0], // Keep first ID for backward compatibility
+        hiveIds: selectedHiveIds,
       });
     } else {
-      addTask({
-        title: newTaskTitle.trim(),
-        description: newTaskDescription.trim(),
-        dueDate: dueDate.toISOString(),
-        hiveId: selectedHiveId,
-        completed: false,
-      });
+      // Create a task for each selected hive if multiple are selected
+      if (selectedHiveIds.length === 1) {
+        addTask({
+          title: newTaskTitle.trim(),
+          description: newTaskDescription.trim(),
+          dueDate: dueDate.toISOString(),
+          hiveId: selectedHiveIds[0],
+          hiveIds: selectedHiveIds,
+          completed: false,
+        });
+      } else {
+        // Create one task with multiple hive IDs
+        addTask({
+          title: newTaskTitle.trim(),
+          description: newTaskDescription.trim(),
+          dueDate: dueDate.toISOString(),
+          hiveId: selectedHiveIds[0], // For backward compatibility
+          hiveIds: selectedHiveIds,
+          completed: false,
+        });
+      }
     }
 
     resetForm();
@@ -104,7 +130,7 @@ export default function RemindersScreen() {
     setNewTaskTitle('');
     setNewTaskDescription('');
     setNewTaskDate('');
-    setSelectedHiveId('');
+    setSelectedHiveIds([]);
     setEditingTask(null);
     setShowAddModal(false);
   };
@@ -113,7 +139,8 @@ export default function RemindersScreen() {
     setEditingTask(task);
     setNewTaskTitle(task.title);
     setNewTaskDescription(task.description || '');
-    setSelectedHiveId(task.hiveId);
+    // Use hiveIds if available, otherwise use single hiveId
+    setSelectedHiveIds(task.hiveIds || [task.hiveId]);
     
     // Format date to DD.MM.YYYY
     const date = new Date(task.dueDate);
@@ -166,7 +193,7 @@ export default function RemindersScreen() {
                 {item.title}
               </Text>
               <Text style={styles.taskHive}>
-                {getHiveName(item.hiveId)}
+                {getHiveNames(item)}
               </Text>
             </View>
             
@@ -301,25 +328,50 @@ export default function RemindersScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Úľ *</Text>
+              <Text style={styles.inputLabel}>Úle * (môžete vybrať viacero)</Text>
+              <TouchableOpacity
+                style={styles.selectAllButton}
+                onPress={() => {
+                  const allHiveIds = hives.filter(hive => !hive.isDeleted).map(h => h.id);
+                  setSelectedHiveIds(selectedHiveIds.length === allHiveIds.length ? [] : allHiveIds);
+                }}
+              >
+                <Text style={styles.selectAllButtonText}>
+                  {selectedHiveIds.length === hives.filter(hive => !hive.isDeleted).length ? 'Odznačiť všetky' : 'Vybrať všetky'}
+                </Text>
+              </TouchableOpacity>
               <View style={styles.pickerContainer}>
-                {hives.filter(hive => !hive.isDeleted).map((hive) => (
-                  <TouchableOpacity
-                    key={hive.id}
-                    style={[
-                      styles.hiveOption,
-                      selectedHiveId === hive.id && styles.selectedHiveOption,
-                    ]}
-                    onPress={() => setSelectedHiveId(hive.id)}
-                  >
-                    <Text style={[
-                      styles.hiveOptionText,
-                      selectedHiveId === hive.id && styles.selectedHiveOptionText,
-                    ]}>
-                      {hive.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {hives.filter(hive => !hive.isDeleted).map((hive) => {
+                  const isSelected = selectedHiveIds.includes(hive.id);
+                  return (
+                    <TouchableOpacity
+                      key={hive.id}
+                      style={[
+                        styles.hiveOption,
+                        isSelected && styles.selectedHiveOption,
+                      ]}
+                      onPress={() => {
+                        if (isSelected) {
+                          setSelectedHiveIds(selectedHiveIds.filter(id => id !== hive.id));
+                        } else {
+                          setSelectedHiveIds([...selectedHiveIds, hive.id]);
+                        }
+                      }}
+                    >
+                      <View style={styles.hiveOptionContent}>
+                        <View style={styles.checkbox}>
+                          {isSelected && <CheckCircle color="#ffffff" size={16} />}
+                        </View>
+                        <Text style={[
+                          styles.hiveOptionText,
+                          isSelected && styles.selectedHiveOptionText,
+                        ]}>
+                          {hive.name}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
@@ -561,8 +613,21 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  selectAllButton: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 6,
+    marginBottom: 12,
+  },
+  selectAllButtonText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
   hiveOption: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
@@ -572,6 +637,21 @@ const styles = StyleSheet.create({
   selectedHiveOption: {
     backgroundColor: '#22c55e',
     borderColor: '#22c55e',
+  },
+  hiveOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  checkbox: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   hiveOptionText: {
     fontSize: 14,

@@ -23,7 +23,8 @@ export interface Inspection {
 
 export interface Task {
   id: string;
-  hiveId: string;
+  hiveId: string; // For backward compatibility
+  hiveIds?: string[]; // New field for multiple hives
   title: string;
   description: string;
   dueDate: string;

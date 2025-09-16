@@ -124,7 +124,26 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
             ? { ...hive, isDeleted: true, deletedAt: new Date().toISOString() }
             : hive
         ),
-        tasks: (prevState.tasks || []).filter(task => task.hiveId !== id),
+        tasks: (prevState.tasks || []).map(task => {
+          // Remove hive from tasks with multiple hives
+          if (task.hiveIds && task.hiveIds.includes(id)) {
+            const newHiveIds = task.hiveIds.filter(hiveId => hiveId !== id);
+            if (newHiveIds.length === 0) {
+              // If no hives left, remove the task
+              return null;
+            }
+            return {
+              ...task,
+              hiveIds: newHiveIds,
+              hiveId: newHiveIds[0], // Update single hiveId for backward compatibility
+            };
+          }
+          // Remove tasks with single hive
+          if (task.hiveId === id) {
+            return null;
+          }
+          return task;
+        }).filter(task => task !== null) as Task[],
       };
       
       // Force recalculation of statistics after hive deletion
@@ -249,10 +268,16 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
 
   const getPendingTasks = useCallback(() => {
     return (state.tasks || []).filter(task => {
-      const hive = (state.hives || []).find(h => h.id === task.hiveId);
+      // Check if task is for hives in current apiary
+      const taskHiveIds = task.hiveIds || [task.hiveId];
+      const hasHiveInCurrentApiary = taskHiveIds.some(hiveId => {
+        const hive = (state.hives || []).find(h => h.id === hiveId);
+        return hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
+      });
+      
       return !task.completed && 
              new Date(task.dueDate) >= new Date() &&
-             hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
+             hasHiveInCurrentApiary;
     });
   }, [state.tasks, state.hives, state.currentApiaryId]);
 
