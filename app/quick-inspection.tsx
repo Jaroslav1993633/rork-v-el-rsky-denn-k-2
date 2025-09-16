@@ -174,7 +174,7 @@ export default function QuickInspectionScreen() {
           <X color="#6b7280" size={24} />
         </TouchableOpacity>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Rýchla prehliadka</Text>
+          <Text style={styles.title}>Rýchla akcia</Text>
           {currentApiary && (
             <Text style={styles.subtitle}>{currentApiary.name}</Text>
           )}

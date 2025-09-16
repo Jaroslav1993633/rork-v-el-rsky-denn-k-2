@@ -11,7 +11,7 @@ import {
 
 } from 'react-native';
 import { router } from 'expo-router';
-import { Plus, Eye, Bell, BarChart3, Hexagon, ChevronDown, MapPin, Edit3, ClipboardList, Package } from 'lucide-react-native';
+import { Plus, Eye, Bell, BarChart3, Hexagon, ChevronDown, MapPin, Edit3, ClipboardList, Droplets } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import TrialBanner from '@/components/TrialBanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -209,7 +209,7 @@ export default function DashboardScreen() {
               onPress={() => router.push('/add-harvest')}
             >
               <View style={[styles.quickActionCardIcon, { backgroundColor: '#f59e0b' }]}>
-                <Package color="#ffffff" size={20} />
+                <Droplets color="#ffffff" size={20} />
               </View>
               <Text style={styles.quickActionCardText}>Pridať výnos</Text>
             </TouchableOpacity>

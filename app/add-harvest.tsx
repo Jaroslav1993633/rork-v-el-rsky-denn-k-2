@@ -12,7 +12,7 @@ import {
   Switch,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { X, Check } from 'lucide-react-native';
+import { X, Check, Droplets } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -185,6 +185,15 @@ export default function AddHarvestScreen() {
         <Animated.View style={[styles.successBanner, { opacity: successOpacity }]}>
           <Check color="#ffffff" size={20} />
           <Text style={styles.successText}>Výnos bol úspešne pridaný!</Text>
+          <TouchableOpacity 
+            style={styles.closeBannerButton}
+            onPress={() => {
+              setShowSuccessMessage(false);
+              successOpacity.setValue(0);
+            }}
+          >
+            <X color="#ffffff" size={16} />
+          </TouchableOpacity>
         </Animated.View>
       )}
 
@@ -383,6 +392,10 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+    flex: 1,
+  },
+  closeBannerButton: {
+    padding: 4,
   },
   content: {
     flex: 1,
