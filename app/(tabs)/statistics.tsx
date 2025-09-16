@@ -389,7 +389,7 @@ export default function StatisticsScreen() {
               )}
             </View>
             <Text style={styles.sectionSubtitle}>
-              {Object.keys(yieldByHive).length} rodín s výnosmi • Kliknite pre zobrazenie/skrytie
+              Výnosy • Kliknite pre zobrazenie/skrytie
             </Text>
           </TouchableOpacity>
           
