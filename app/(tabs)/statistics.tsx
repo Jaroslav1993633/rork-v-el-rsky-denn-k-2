@@ -194,8 +194,7 @@ export default function StatisticsScreen() {
   const getInspectionsByYear = (year: number) => {
     return inspections.filter(inspection => {
       const inspectionYear = new Date(inspection.date).getFullYear();
-      const hive = hives.find(h => h.id === inspection.hiveId);
-      return inspectionYear === year && hive && !hive.isDeleted;
+      return inspectionYear === year;
     }).length;
   };
   
