@@ -7,52 +7,118 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Switch,
 } from 'react-native';
 import { router } from 'expo-router';
-import { X, Check } from 'lucide-react-native';
+import { X, Check, Droplets, Bug, Heart } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+type ActionType = 'inspection' | 'feeding' | 'treatment' | 'health';
+
+const ACTION_CONFIGS = {
+  inspection: {
+    label: 'Prehliadka úľa',
+    icon: Check,
+    color: '#3b82f6',
+    multiSelect: false,
+  },
+  feeding: {
+    label: 'Kŕmenie',
+    icon: Droplets,
+    color: '#f59e0b',
+    multiSelect: true,
+  },
+  treatment: {
+    label: 'Liečba',
+    icon: Bug,
+    color: '#ef4444',
+    multiSelect: true,
+  },
+  health: {
+    label: 'Zdravotná kontrola',
+    icon: Heart,
+    color: '#10b981',
+    multiSelect: true,
+  },
+};
 
 export default function QuickInspectionScreen() {
   const { hives, addInspection } = useBeekeeping();
   const insets = useSafeAreaInsets();
-  const [selectedHiveId, setSelectedHiveId] = useState<string>('');
+  const [actionType, setActionType] = useState<ActionType>('inspection');
+  const [selectedHiveIds, setSelectedHiveIds] = useState<string[]>([]);
   const [notes, setNotes] = useState<string>('');
+  const [selectAll, setSelectAll] = useState<boolean>(false);
+
+  const currentConfig = ACTION_CONFIGS[actionType];
+  const allowsMultiSelect = currentConfig.multiSelect;
+
+  const handleHiveToggle = (hiveId: string) => {
+    if (!allowsMultiSelect) {
+      setSelectedHiveIds([hiveId]);
+    } else {
+      setSelectedHiveIds(prev => {
+        if (prev.includes(hiveId)) {
+          return prev.filter(id => id !== hiveId);
+        }
+        return [...prev, hiveId];
+      });
+    }
+  };
+
+  const handleSelectAll = (value: boolean) => {
+    setSelectAll(value);
+    if (value) {
+      setSelectedHiveIds(hives.map(h => h.id));
+    } else {
+      setSelectedHiveIds([]);
+    }
+  };
 
   const handleSave = () => {
-    console.log('handleSave called', { selectedHiveId, notes: notes.trim() });
+    console.log('handleSave called', { selectedHiveIds, notes: notes.trim(), actionType });
     
-    if (!selectedHiveId) {
-      Alert.alert('Chyba', 'Prosím vyberte úľ');
+    if (selectedHiveIds.length === 0) {
+      Alert.alert('Chyba', 'Prosím vyberte aspoň jeden úľ');
       return;
     }
 
     if (!notes.trim()) {
-      Alert.alert('Chyba', 'Prosím zadajte poznámky k prehliadke');
+      Alert.alert('Chyba', `Prosím zadajte poznámky k akcii: ${currentConfig.label}`);
       return;
     }
 
-    const inspectionData = {
-      hiveId: selectedHiveId,
-      date: new Date().toISOString(),
-      notes: notes.trim(),
-    };
-    
-    console.log('Adding inspection:', inspectionData);
+    const date = new Date().toISOString();
+    const actionNotes = `[${currentConfig.label}] ${notes.trim()}`;
     
     try {
-      addInspection(inspectionData);
-      console.log('Inspection added successfully');
+      selectedHiveIds.forEach(hiveId => {
+        const inspectionData = {
+          hiveId,
+          date,
+          notes: actionNotes,
+        };
+        console.log('Adding inspection for hive:', hiveId, inspectionData);
+        addInspection(inspectionData);
+      });
+      
+      console.log('All inspections added successfully');
       
       setNotes('');
-      setSelectedHiveId('');
+      setSelectedHiveIds([]);
+      setSelectAll(false);
       
-      Alert.alert('Úspech', 'Prehliadka bola pridaná', [
+      const message = selectedHiveIds.length === 1 
+        ? `${currentConfig.label} bola pridaná`
+        : `${currentConfig.label} bola pridaná pre ${selectedHiveIds.length} úľov`;
+      
+      Alert.alert('Úspech', message, [
         { text: 'OK', onPress: () => router.back() }
       ]);
     } catch (error) {
-      console.error('Error adding inspection:', error);
-      Alert.alert('Chyba', 'Nepodarilo sa pridať prehliadku');
+      console.error('Error adding inspections:', error);
+      Alert.alert('Chyba', `Nepodarilo sa pridať ${currentConfig.label.toLowerCase()}`);
     }
   };
 
@@ -70,12 +136,48 @@ export default function QuickInspectionScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Poznámky k prehliadke</Text>
+          <Text style={styles.sectionTitle}>Typ akcie</Text>
+          <View style={styles.actionTypes}>
+            {(Object.keys(ACTION_CONFIGS) as ActionType[]).map((type) => {
+              const config = ACTION_CONFIGS[type];
+              const Icon = config.icon;
+              const isSelected = actionType === type;
+              return (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.actionTypeButton,
+                    isSelected && { backgroundColor: config.color + '20', borderColor: config.color }
+                  ]}
+                  onPress={() => {
+                    setActionType(type);
+                    setSelectedHiveIds([]);
+                    setSelectAll(false);
+                  }}
+                >
+                  <Icon 
+                    size={20} 
+                    color={isSelected ? config.color : '#6b7280'}
+                  />
+                  <Text style={[
+                    styles.actionTypeLabel,
+                    isSelected && { color: config.color }
+                  ]}>
+                    {config.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Poznámky k akcii</Text>
           <TextInput
             style={styles.notesInput}
             value={notes}
             onChangeText={setNotes}
-            placeholder="Opíšte čo ste robili pri prehliadke..."
+            placeholder={`Opíšte detaily akcie: ${currentConfig.label}...`}
             multiline
             numberOfLines={6}
             textAlignVertical="top"
@@ -83,33 +185,62 @@ export default function QuickInspectionScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Vyberte úľ</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              {allowsMultiSelect ? 'Vyberte úle' : 'Vyberte úľ'}
+              {selectedHiveIds.length > 0 && ` (${selectedHiveIds.length})`}
+            </Text>
+            {allowsMultiSelect && hives.length > 3 && (
+              <View style={styles.selectAllContainer}>
+                <Text style={styles.selectAllLabel}>Vybrať všetky</Text>
+                <Switch
+                  value={selectAll}
+                  onValueChange={handleSelectAll}
+                  trackColor={{ false: '#e5e7eb', true: currentConfig.color + '60' }}
+                  thumbColor={selectAll ? currentConfig.color : '#f3f4f6'}
+                />
+              </View>
+            )}
+          </View>
+          
           <View style={styles.hivesCompactGrid}>
-            {hives.map((hive) => (
-              <TouchableOpacity
-                key={hive.id}
-                style={[
-                  styles.compactHiveItem,
-                  selectedHiveId === hive.id && styles.selectedCompactHiveItem
-                ]}
-                onPress={() => setSelectedHiveId(hive.id)}
-              >
-                <View style={[
-                  styles.checkbox,
-                  selectedHiveId === hive.id && styles.selectedCheckbox
-                ]}>
-                  {selectedHiveId === hive.id && (
-                    <Check color="#ffffff" size={12} />
-                  )}
-                </View>
-                <Text style={[
-                  styles.compactHiveName,
-                  selectedHiveId === hive.id && styles.selectedCompactHiveName
-                ]}>
-                  {hive.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {hives.map((hive) => {
+              const isSelected = selectedHiveIds.includes(hive.id);
+              return (
+                <TouchableOpacity
+                  key={hive.id}
+                  style={[
+                    styles.compactHiveItem,
+                    isSelected && {
+                      backgroundColor: currentConfig.color + '10',
+                      borderColor: currentConfig.color,
+                    }
+                  ]}
+                  onPress={() => handleHiveToggle(hive.id)}
+                >
+                  <View style={[
+                    styles.checkbox,
+                    isSelected && {
+                      backgroundColor: currentConfig.color,
+                      borderColor: currentConfig.color,
+                    }
+                  ]}>
+                    {isSelected && (
+                      <Check color="#ffffff" size={12} />
+                    )}
+                  </View>
+                  <Text style={[
+                    styles.compactHiveName,
+                    isSelected && {
+                      color: currentConfig.color,
+                      fontWeight: '600',
+                    }
+                  ]}>
+                    {hive.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       </ScrollView>
@@ -208,5 +339,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#111827',
     minHeight: 120,
+  },
+  actionTypes: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  actionTypeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
+    gap: 8,
+  },
+  actionTypeLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  selectAllContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectAllLabel: {
+    fontSize: 14,
+    color: '#6b7280',
   },
 });
