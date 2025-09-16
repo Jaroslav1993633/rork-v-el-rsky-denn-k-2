@@ -174,10 +174,13 @@ export default function AddHarvestScreen() {
           disabled={isSaving}
         >
           {isSaving ? (
-            <ActivityIndicator size="small" color="#22c55e" />
+            <ActivityIndicator size="small" color="#ffffff" />
           ) : (
-            <Check color="#22c55e" size={24} />
+            <Check color="#ffffff" size={18} />
           )}
+          <Text style={styles.saveButtonText}>
+            {isSaving ? 'Ukladá...' : 'Uložiť'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -361,10 +364,29 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   saveButton: {
-    padding: 4,
+    backgroundColor: '#22c55e',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   saveButtonDisabled: {
     opacity: 0.6,
+  },
+  saveButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   successBanner: {
     position: 'absolute',
