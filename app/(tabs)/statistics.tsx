@@ -36,6 +36,7 @@ export default function StatisticsScreen() {
 
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [selectedYearForStats, setSelectedYearForStats] = useState(currentYear);
+  const [showHiveYields, setShowHiveYields] = useState(false);
 
   const thisMonthInspections = getThisMonthInspections();
   const thisYearYield = getThisYearYield();
@@ -310,8 +311,25 @@ export default function StatisticsScreen() {
         </View>
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Úroda podľa úľov ({selectedYearForStats})</Text>
-          <View style={styles.hiveYieldList}>
+          <TouchableOpacity 
+            style={styles.sectionHeaderClickable}
+            onPress={() => setShowHiveYields(!showHiveYields)}
+          >
+            <View style={styles.sectionHeaderWithToggle}>
+              <Text style={styles.sectionTitle}>Úroda podľa úľov ({selectedYearForStats})</Text>
+              {showHiveYields ? (
+                <ChevronUp color="#6b7280" size={20} />
+              ) : (
+                <ChevronDown color="#6b7280" size={20} />
+              )}
+            </View>
+            <Text style={styles.sectionSubtitle}>
+              {Object.keys(yieldByHive).length} úľov s úrodou • Kliknite pre zobrazenie/skrytie
+            </Text>
+          </TouchableOpacity>
+          
+          {showHiveYields && (
+            <View style={styles.hiveYieldList}>
             {Object.entries(yieldByHive).map(([hiveName, data]) => (
               <View key={hiveName} style={styles.hiveYieldItem}>
                 <View style={styles.hiveYieldHeader}>
@@ -334,7 +352,8 @@ export default function StatisticsScreen() {
                 </Text>
               </View>
             )}
-          </View>
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -599,6 +618,11 @@ const styles = StyleSheet.create({
   },
   sectionHeaderClickable: {
     marginBottom: 16,
+  },
+  sectionHeaderWithToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   sectionSubtitle: {
     fontSize: 14,
