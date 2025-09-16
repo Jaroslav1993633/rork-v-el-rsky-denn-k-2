@@ -266,7 +266,11 @@ export default function StatisticsScreen() {
           text: 'Zmazať',
           style: 'destructive',
           onPress: () => {
+            console.log('Deleting yield with ID:', yieldItem.id);
             deleteYield(yieldItem.id);
+            setEditingYield(null);
+            setEditAmount('');
+            setEditNotes('');
             Alert.alert('Úspech', 'Výnos bol zmazaný');
           }
         }
@@ -607,7 +611,6 @@ export default function StatisticsScreen() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.deleteButton]}
                 onPress={() => {
-                  handleCancelEdit();
                   if (editingYield) {
                     handleDeleteYield(editingYield);
                   }

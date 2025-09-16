@@ -246,9 +246,18 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   }, [updateState]);
 
   const deleteYield = useCallback((id: string) => {
-    updateState(prevState => ({
-      yields: (prevState.yields || []).filter(yieldItem => yieldItem.id !== id)
-    }));
+    console.log('=== DELETE YIELD STORE DEBUG ===');
+    console.log('deleteYield called with ID:', id);
+    
+    updateState(prevState => {
+      console.log('Current yields count before delete:', (prevState.yields || []).length);
+      const filteredYields = (prevState.yields || []).filter(yieldItem => yieldItem.id !== id);
+      console.log('Yields count after delete:', filteredYields.length);
+      console.log('Deleted yield with ID:', id);
+      return { yields: filteredYields };
+    });
+    
+    console.log('deleteYield completed');
   }, [updateState]);
 
   // Trial and registration
