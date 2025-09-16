@@ -88,6 +88,12 @@ export default function HiveDetailScreen() {
   const [editYieldAmount, setEditYieldAmount] = useState('');
   const [editYieldType, setEditYieldType] = useState<'med' | 'pel' | 'propolis' | 'ine'>('med');
   const [editYieldDate, setEditYieldDate] = useState('');
+  const [editingInspectionId, setEditingInspectionId] = useState<string | null>(null);
+  const [editInspectionNote, setEditInspectionNote] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editTaskTitle, setEditTaskTitle] = useState('');
+  const [editTaskDescription, setEditTaskDescription] = useState('');
+  const [editTaskDate, setEditTaskDate] = useState('');
 
   const hive = hives.find(h => h.id === id);
   const hiveInspections = inspections.filter(i => i.hiveId === id).sort((a, b) => 
@@ -395,6 +401,109 @@ export default function HiveDetailScreen() {
     setEditYieldDate('');
   };
 
+  const handleEditInspection = (inspection: any) => {
+    setEditingInspectionId(inspection.id);
+    setEditInspectionNote(inspection.notes);
+  };
+
+  const handleSaveInspectionEdit = () => {
+    if (!editInspectionNote.trim()) {
+      if (Platform.OS === 'web') {
+        alert('Zadajte poznámku k prehliadke');
+      }
+      return;
+    }
+
+    if (editingInspectionId) {
+      updateInspection(editingInspectionId, {
+        notes: editInspectionNote.trim(),
+      });
+      setEditingInspectionId(null);
+      setEditInspectionNote('');
+    }
+  };
+
+  const handleCancelInspectionEdit = () => {
+    setEditingInspectionId(null);
+    setEditInspectionNote('');
+  };
+
+  const handleEditTask = (task: any) => {
+    setEditingTaskId(task.id);
+    setEditTaskTitle(task.title);
+    setEditTaskDescription(task.description || '');
+    
+    const taskDate = new Date(task.dueDate);
+    const formattedDate = `${taskDate.getDate().toString().padStart(2, '0')}.${(taskDate.getMonth() + 1).toString().padStart(2, '0')}.${taskDate.getFullYear()}`;
+    setEditTaskDate(formattedDate);
+  };
+
+  const handleSaveTaskEdit = () => {
+    if (!editTaskTitle.trim()) {
+      if (Platform.OS === 'web') {
+        alert('Zadajte názov úlohy');
+      }
+      return;
+    }
+
+    if (!editTaskDate.trim()) {
+      if (Platform.OS === 'web') {
+        alert('Zadajte dátum');
+      }
+      return;
+    }
+
+    // Parse the date in DD.MM.YYYY format
+    const dateParts = editTaskDate.trim().split('.');
+    if (dateParts.length !== 3) {
+      if (Platform.OS === 'web') {
+        alert('Neplatný formát dátumu. Použite DD.MM.YYYY');
+      }
+      return;
+    }
+
+    const day = parseInt(dateParts[0], 10);
+    const month = parseInt(dateParts[1], 10) - 1;
+    const year = parseInt(dateParts[2], 10);
+
+    if (isNaN(day) || isNaN(month) || isNaN(year) || day < 1 || day > 31 || month < 0 || month > 11 || year < 2020) {
+      if (Platform.OS === 'web') {
+        alert('Neplatný dátum');
+      }
+      return;
+    }
+
+    const taskDate = new Date(year, month, day, 12, 0, 0);
+    if (isNaN(taskDate.getTime()) || 
+        taskDate.getDate() !== day || 
+        taskDate.getMonth() !== month || 
+        taskDate.getFullYear() !== year) {
+      if (Platform.OS === 'web') {
+        alert('Neplatný dátum');
+      }
+      return;
+    }
+
+    if (editingTaskId) {
+      updateTask(editingTaskId, {
+        title: editTaskTitle.trim(),
+        description: editTaskDescription.trim(),
+        dueDate: taskDate.toISOString(),
+      });
+      setEditingTaskId(null);
+      setEditTaskTitle('');
+      setEditTaskDescription('');
+      setEditTaskDate('');
+    }
+  };
+
+  const handleCancelTaskEdit = () => {
+    setEditingTaskId(null);
+    setEditTaskTitle('');
+    setEditTaskDescription('');
+    setEditTaskDate('');
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('sk-SK', {
       day: '2-digit',
@@ -644,15 +753,52 @@ export default function HiveDetailScreen() {
           
           {hiveInspections.map((inspection) => (
             <View key={inspection.id} style={styles.listItem}>
-              <View style={styles.listItemHeader}>
-                <Text style={styles.listItemDate}>{formatDate(inspection.date)}</Text>
-                <TouchableOpacity 
-                  onPress={() => deleteInspection(inspection.id)}
-                >
-                  <Trash2 color="#ef4444" size={16} />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.listItemText}>{inspection.notes}</Text>
+              {editingInspectionId === inspection.id ? (
+                <View style={styles.editInspectionForm}>
+                  <TextInput
+                    style={styles.textArea}
+                    value={editInspectionNote}
+                    onChangeText={setEditInspectionNote}
+                    placeholder="Poznámky k prehliadke..."
+                    multiline
+                    numberOfLines={3}
+                  />
+                  <View style={styles.formActions}>
+                    <TouchableOpacity 
+                      style={styles.cancelButton}
+                      onPress={handleCancelInspectionEdit}
+                    >
+                      <Text style={styles.cancelButtonText}>Zrušiť</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.saveFormButton}
+                      onPress={handleSaveInspectionEdit}
+                    >
+                      <Text style={styles.saveButtonText}>Uložiť</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.listItemHeader}>
+                    <Text style={styles.listItemDate}>{formatDate(inspection.date)}</Text>
+                    <View style={styles.inspectionActions}>
+                      <TouchableOpacity 
+                        onPress={() => handleEditInspection(inspection)}
+                        style={styles.editInspectionButton}
+                      >
+                        <Edit3 color="#3b82f6" size={16} />
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => deleteInspection(inspection.id)}
+                      >
+                        <Trash2 color="#ef4444" size={16} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <Text style={styles.listItemText}>{inspection.notes}</Text>
+                </>
+              )}
             </View>
           ))}
           
@@ -719,25 +865,73 @@ export default function HiveDetailScreen() {
           
           {hiveTasks.map((task) => (
             <View key={task.id} style={styles.listItem}>
-              <View style={styles.listItemHeader}>
-                <Text style={styles.listItemTitle}>{task.title}</Text>
-                <View style={styles.taskActions}>
-                  <TouchableOpacity 
-                    onPress={() => updateTask(task.id, { completed: true })}
-                    style={styles.completeButton}
-                  >
-                    <Text style={styles.completeButtonText}>Hotovo</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    onPress={() => deleteTask(task.id)}
-                  >
-                    <Trash2 color="#ef4444" size={16} />
-                  </TouchableOpacity>
+              {editingTaskId === task.id ? (
+                <View style={styles.editTaskForm}>
+                  <TextInput
+                    style={styles.input}
+                    value={editTaskTitle}
+                    onChangeText={setEditTaskTitle}
+                    placeholder="Názov úlohy"
+                  />
+                  <TextInput
+                    style={styles.textArea}
+                    value={editTaskDescription}
+                    onChangeText={setEditTaskDescription}
+                    placeholder="Popis úlohy (voliteľné)"
+                    multiline
+                    numberOfLines={2}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={editTaskDate}
+                    onChangeText={setEditTaskDate}
+                    placeholder="Dátum (DD.MM.YYYY)"
+                    keyboardType="numeric"
+                  />
+                  <View style={styles.formActions}>
+                    <TouchableOpacity 
+                      style={styles.cancelButton}
+                      onPress={handleCancelTaskEdit}
+                    >
+                      <Text style={styles.cancelButtonText}>Zrušiť</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.saveFormButton}
+                      onPress={handleSaveTaskEdit}
+                    >
+                      <Text style={styles.saveButtonText}>Uložiť</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-              <Text style={styles.listItemDate}>Termín: {formatDate(task.dueDate)}</Text>
-              {task.description && (
-                <Text style={styles.listItemText}>{task.description}</Text>
+              ) : (
+                <>
+                  <View style={styles.listItemHeader}>
+                    <Text style={styles.listItemTitle}>{task.title}</Text>
+                    <View style={styles.taskActions}>
+                      <TouchableOpacity 
+                        onPress={() => handleEditTask(task)}
+                        style={styles.editTaskButton}
+                      >
+                        <Edit3 color="#3b82f6" size={16} />
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => updateTask(task.id, { completed: true })}
+                        style={styles.completeButton}
+                      >
+                        <Text style={styles.completeButtonText}>Hotovo</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={() => deleteTask(task.id)}
+                      >
+                        <Trash2 color="#ef4444" size={16} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <Text style={styles.listItemDate}>Termín: {formatDate(task.dueDate)}</Text>
+                  {task.description && (
+                    <Text style={styles.listItemText}>{task.description}</Text>
+                  )}
+                </>
               )}
             </View>
           ))}
@@ -1328,5 +1522,22 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     fontSize: 16,
     color: '#374151',
+  },
+  inspectionActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editInspectionButton: {
+    padding: 2,
+  },
+  editInspectionForm: {
+    gap: 12,
+  },
+  editTaskButton: {
+    padding: 2,
+  },
+  editTaskForm: {
+    gap: 12,
   },
 });
