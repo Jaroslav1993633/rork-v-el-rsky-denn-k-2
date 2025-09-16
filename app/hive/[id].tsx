@@ -79,14 +79,14 @@ export default function HiveDetailScreen() {
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskDate, setNewTaskDate] = useState('');
   const [newYieldAmount, setNewYieldAmount] = useState('');
-  const [newYieldType, setNewYieldType] = useState<'med' | 'pel' | 'propolis' | 'ine'>('med');
+  const [newYieldType, setNewYieldType] = useState<'med' | 'vosk'>('med');
   const [newYieldDate, setNewYieldDate] = useState('');
   const [showAddInspection, setShowAddInspection] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [showAddYield, setShowAddYield] = useState(false);
   const [editingYieldId, setEditingYieldId] = useState<string | null>(null);
   const [editYieldAmount, setEditYieldAmount] = useState('');
-  const [editYieldType, setEditYieldType] = useState<'med' | 'pel' | 'propolis' | 'ine'>('med');
+  const [editYieldType, setEditYieldType] = useState<'med' | 'vosk'>('med');
   const [editYieldDate, setEditYieldDate] = useState('');
   const [editingInspectionId, setEditingInspectionId] = useState<string | null>(null);
   const [editInspectionNote, setEditInspectionNote] = useState('');
@@ -955,7 +955,7 @@ export default function HiveDetailScreen() {
           {showAddYield && (
             <View style={styles.addForm}>
               <View style={styles.yieldTypeSelector}>
-                {(['med', 'pel', 'propolis', 'ine'] as const).map((type) => (
+                {(['med', 'vosk'] as const).map((type) => (
                   <TouchableOpacity
                     key={type}
                     style={[
@@ -968,7 +968,7 @@ export default function HiveDetailScreen() {
                       styles.yieldTypeText,
                       newYieldType === type && styles.selectedYieldTypeText,
                     ]}>
-                      {type === 'med' ? 'Med' : type === 'pel' ? 'Peľ' : type === 'propolis' ? 'Propolis' : 'Iné'}
+                      {type === 'med' ? 'Med' : 'Vosk'}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -1013,7 +1013,7 @@ export default function HiveDetailScreen() {
               {editingYieldId === yieldItem.id ? (
                 <View style={styles.editYieldForm}>
                   <View style={styles.yieldTypeSelector}>
-                    {(['med', 'pel', 'propolis', 'ine'] as const).map((type) => (
+                    {(['med', 'vosk'] as const).map((type) => (
                       <TouchableOpacity
                         key={type}
                         style={[
@@ -1026,7 +1026,7 @@ export default function HiveDetailScreen() {
                           styles.yieldTypeText,
                           editYieldType === type && styles.selectedYieldTypeText,
                         ]}>
-                          {type === 'med' ? 'Med' : type === 'pel' ? 'Peľ' : type === 'propolis' ? 'Propolis' : 'Iné'}
+                          {type === 'med' ? 'Med' : 'Vosk'}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -1064,9 +1064,7 @@ export default function HiveDetailScreen() {
                 <>
                   <View style={styles.listItemHeader}>
                     <Text style={styles.listItemTitle}>
-                      {yieldItem.type === 'med' ? 'Med' : 
-                       yieldItem.type === 'pel' ? 'Peľ' : 
-                       yieldItem.type === 'propolis' ? 'Propolis' : 'Iné'}
+                      {yieldItem.type === 'med' ? 'Med' : 'Vosk'}
                     </Text>
                     <View style={styles.yieldActions}>
                       <TouchableOpacity 
