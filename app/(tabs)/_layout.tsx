@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, Hexagon, BarChart3, Bell, Settings } from "lucide-react-native";
+import { Home, Hexagon, BarChart3, Bell, Settings, Map } from "lucide-react-native";
 import React from "react";
 
 export default function TabLayout() {
@@ -39,6 +39,13 @@ export default function TabLayout() {
         options={{
           title: "Štatistiky",
           tabBarIcon: ({ color, size }) => <BarChart3 color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: "Mapa",
+          tabBarIcon: ({ color, size }) => <Map color={color} size={size} />,
         }}
       />
       <Tabs.Screen
