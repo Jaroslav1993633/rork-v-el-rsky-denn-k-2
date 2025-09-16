@@ -103,6 +103,7 @@ export default function DashboardScreen() {
             <StatCard
               title="Výnos tento rok (kg)"
               value={thisYearYield.toFixed(1)}
+              onPress={() => router.push('/statistics')}
               icon={BarChart3}
             />
           </View>
