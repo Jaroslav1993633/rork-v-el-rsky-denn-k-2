@@ -46,7 +46,9 @@ const ACTION_CONFIGS = {
 };
 
 export default function QuickInspectionScreen() {
-  const { hives, addInspection } = useBeekeeping();
+  const { getCurrentApiaryHives, addInspection, getCurrentApiary } = useBeekeeping();
+  const currentApiary = getCurrentApiary();
+  const hives = getCurrentApiaryHives();
   const insets = useSafeAreaInsets();
   const [actionType, setActionType] = useState<ActionType>('inspection');
   const [selectedHiveIds, setSelectedHiveIds] = useState<string[]>([]);
@@ -177,7 +179,12 @@ export default function QuickInspectionScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <X color="#6b7280" size={24} />
         </TouchableOpacity>
-        <Text style={styles.title}>Rýchla prehliadka</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Rýchla prehliadka</Text>
+          {currentApiary && (
+            <Text style={styles.subtitle}>{currentApiary.name}</Text>
+          )}
+        </View>
         <TouchableOpacity 
           onPress={handleSave} 
           style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
@@ -267,45 +274,56 @@ export default function QuickInspectionScreen() {
             )}
           </View>
           
-          <View style={styles.hivesCompactGrid}>
-            {hives.map((hive) => {
-              const isSelected = selectedHiveIds.includes(hive.id);
-              return (
-                <TouchableOpacity
-                  key={hive.id}
-                  style={[
-                    styles.compactHiveItem,
-                    isSelected && {
-                      backgroundColor: currentConfig.color + '10',
-                      borderColor: currentConfig.color,
-                    }
-                  ]}
-                  onPress={() => handleHiveToggle(hive.id)}
-                >
-                  <View style={[
-                    styles.checkbox,
-                    isSelected && {
-                      backgroundColor: currentConfig.color,
-                      borderColor: currentConfig.color,
-                    }
-                  ]}>
-                    {isSelected && (
-                      <Check color="#ffffff" size={12} />
-                    )}
-                  </View>
-                  <Text style={[
-                    styles.compactHiveName,
-                    isSelected && {
-                      color: currentConfig.color,
-                      fontWeight: '600',
-                    }
-                  ]}>
-                    {hive.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {hives.length === 0 ? (
+            <View style={styles.noHivesContainer}>
+              <Text style={styles.noHivesText}>
+                {currentApiary 
+                  ? `Žiadne úle v včelnici ${currentApiary.name}`
+                  : 'Žiadne úle k dispozícii'
+                }
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.hivesCompactGrid}>
+              {hives.map((hive) => {
+                const isSelected = selectedHiveIds.includes(hive.id);
+                return (
+                  <TouchableOpacity
+                    key={hive.id}
+                    style={[
+                      styles.compactHiveItem,
+                      isSelected && {
+                        backgroundColor: currentConfig.color + '10',
+                        borderColor: currentConfig.color,
+                      }
+                    ]}
+                    onPress={() => handleHiveToggle(hive.id)}
+                  >
+                    <View style={[
+                      styles.checkbox,
+                      isSelected && {
+                        backgroundColor: currentConfig.color,
+                        borderColor: currentConfig.color,
+                      }
+                    ]}>
+                      {isSelected && (
+                        <Check color="#ffffff" size={12} />
+                      )}
+                    </View>
+                    <Text style={[
+                      styles.compactHiveName,
+                      isSelected && {
+                        color: currentConfig.color,
+                        fontWeight: '600',
+                      }
+                    ]}>
+                      {hive.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -329,10 +347,18 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 4,
   },
+  titleContainer: {
+    alignItems: 'center',
+  },
   title: {
     fontSize: 18,
     fontWeight: '600',
     color: '#111827',
+  },
+  subtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
   },
   saveButton: {
     padding: 4,
@@ -469,5 +495,14 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  noHivesContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noHivesText: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
   },
 });

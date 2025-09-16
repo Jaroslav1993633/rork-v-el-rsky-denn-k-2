@@ -210,44 +210,59 @@ export default function AddHiveModal() {
     </View>
   );
 
-  const ApiarySelector = () => (
-    <View style={styles.selectorContainer}>
-      <Text style={styles.label}>Vcelnica (voliteľné)</Text>
-      <View style={styles.statusGrid}>
-        <TouchableOpacity
-          style={[
-            styles.statusOption,
-            selectedApiaryId === undefined && styles.selectedStatus,
-          ]}
-          onPress={() => setSelectedApiaryId(undefined)}
-        >
-          <Text style={[
-            styles.statusText,
-            selectedApiaryId === undefined && styles.selectedStatusText,
-          ]}>
-            Bez vcelnice
-          </Text>
-        </TouchableOpacity>
-        {apiaries.map((apiary) => (
-          <TouchableOpacity
-            key={apiary.id}
-            style={[
-              styles.statusOption,
-              selectedApiaryId === apiary.id && styles.selectedStatus,
-            ]}
-            onPress={() => setSelectedApiaryId(apiary.id)}
-          >
-            <Text style={[
-              styles.statusText,
-              selectedApiaryId === apiary.id && styles.selectedStatusText,
-            ]}>
-              {apiary.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+  const ApiarySelector = () => {
+    if (!currentApiary) {
+      return (
+        <View style={styles.selectorContainer}>
+          <Text style={styles.label}>Vcelnica (voliteľné)</Text>
+          <View style={styles.statusGrid}>
+            <TouchableOpacity
+              style={[
+                styles.statusOption,
+                selectedApiaryId === undefined && styles.selectedStatus,
+              ]}
+              onPress={() => setSelectedApiaryId(undefined)}
+            >
+              <Text style={[
+                styles.statusText,
+                selectedApiaryId === undefined && styles.selectedStatusText,
+              ]}>
+                Bez vcelnice
+              </Text>
+            </TouchableOpacity>
+            {apiaries.map((apiary) => (
+              <TouchableOpacity
+                key={apiary.id}
+                style={[
+                  styles.statusOption,
+                  selectedApiaryId === apiary.id && styles.selectedStatus,
+                ]}
+                onPress={() => setSelectedApiaryId(apiary.id)}
+              >
+                <Text style={[
+                  styles.statusText,
+                  selectedApiaryId === apiary.id && styles.selectedStatusText,
+                ]}>
+                  {apiary.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      );
+    }
+    
+    // When in a specific apiary, show it as fixed
+    return (
+      <View style={styles.selectorContainer}>
+        <Text style={styles.label}>Včelnica</Text>
+        <View style={styles.fixedApiaryContainer}>
+          <Text style={styles.fixedApiaryText}>{currentApiary.name}</Text>
+          <Text style={styles.fixedApiaryNote}>Úľ bude pridaný do tejto včelnice</Text>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <Modal
@@ -518,5 +533,24 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 8,
     textAlign: 'center',
+  },
+  fixedApiaryContainer: {
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#22c55e',
+    borderRadius: 8,
+    padding: 16,
+  },
+  fixedApiaryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#22c55e',
+    textAlign: 'center',
+  },
+  fixedApiaryNote: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 4,
   },
 });

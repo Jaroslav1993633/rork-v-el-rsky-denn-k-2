@@ -16,7 +16,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 type YieldType = 'med' | 'pel' | 'propolis' | 'ine';
 
 export default function AddHarvestScreen() {
-  const { hives, addYield } = useBeekeeping();
+  const { getCurrentApiaryHives, addYield, getCurrentApiary } = useBeekeeping();
+  const currentApiary = getCurrentApiary();
+  const hives = getCurrentApiaryHives();
   const insets = useSafeAreaInsets();
   
   const [selectedHiveId, setSelectedHiveId] = useState<string>('');
@@ -93,25 +95,39 @@ export default function AddHarvestScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Výber úľa</Text>
-          <View style={styles.hivesList}>
-            {hives.map(hive => (
-              <TouchableOpacity
-                key={hive.id}
-                style={[
-                  styles.hiveItem,
-                  selectedHiveId === hive.id && styles.hiveItemSelected
-                ]}
-                onPress={() => setSelectedHiveId(hive.id)}
-              >
-                <Text style={[
-                  styles.hiveItemText,
-                  selectedHiveId === hive.id && styles.hiveItemTextSelected
-                ]}>
-                  {hive.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {currentApiary && (
+            <Text style={styles.sectionSubtitle}>Včelnica: {currentApiary.name}</Text>
+          )}
+          {hives.length === 0 ? (
+            <View style={styles.noHivesContainer}>
+              <Text style={styles.noHivesText}>
+                {currentApiary 
+                  ? `Žiadne úle v včelnici ${currentApiary.name}`
+                  : 'Žiadne úle k dispozícii'
+                }
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.hivesList}>
+              {hives.map(hive => (
+                <TouchableOpacity
+                  key={hive.id}
+                  style={[
+                    styles.hiveItem,
+                    selectedHiveId === hive.id && styles.hiveItemSelected
+                  ]}
+                  onPress={() => setSelectedHiveId(hive.id)}
+                >
+                  <Text style={[
+                    styles.hiveItemText,
+                    selectedHiveId === hive.id && styles.hiveItemTextSelected
+                  ]}>
+                    {hive.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -391,5 +407,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#111827',
     minHeight: 100,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 12,
+  },
+  noHivesContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noHivesText: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
   },
 });
