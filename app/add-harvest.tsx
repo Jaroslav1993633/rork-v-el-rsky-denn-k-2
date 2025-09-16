@@ -13,7 +13,7 @@ import { ArrowLeft, Save, Calendar } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-type YieldType = 'med' | 'pel' | 'propolis' | 'ine';
+type YieldType = 'med' | 'pel' | 'propolis' | 'vosk';
 
 export default function AddHarvestScreen() {
   const { getCurrentApiaryHives, addYield, getCurrentApiary } = useBeekeeping();
@@ -21,10 +21,9 @@ export default function AddHarvestScreen() {
   const hives = getCurrentApiaryHives();
   const insets = useSafeAreaInsets();
   
-  const [selectedHiveId, setSelectedHiveId] = useState<string>('');
+  const [selectedHiveIds, setSelectedHiveIds] = useState<string[]>([]);
   const [yieldType, setYieldType] = useState<YieldType>('med');
   const [amount, setAmount] = useState('');
-  const [unit, setUnit] = useState('kg');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
 
@@ -32,32 +31,35 @@ export default function AddHarvestScreen() {
     { value: 'med' as YieldType, label: 'Med' },
     { value: 'pel' as YieldType, label: 'Peľ' },
     { value: 'propolis' as YieldType, label: 'Propolis' },
-    { value: 'ine' as YieldType, label: 'Iné' },
+    { value: 'vosk' as YieldType, label: 'Vosk' },
   ];
 
-  const units = ['kg', 'g', 'l', 'ml', 'ks'];
-
   const handleSave = () => {
-    if (!selectedHiveId) {
-      Alert.alert('Chyba', 'Vyberte úľ');
+    if (selectedHiveIds.length === 0) {
+      Alert.alert('Chyba', 'Vyberte aspoň jeden úľ');
       return;
     }
     
-    if (!amount || isNaN(Number(amount))) {
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
       Alert.alert('Chyba', 'Zadajte platné množstvo');
       return;
     }
 
-    addYield({
-      hiveId: selectedHiveId,
-      type: yieldType,
-      amount: Number(amount),
-      unit,
-      date: new Date(date).toISOString(),
-      notes: notes.trim() || undefined,
+    const amountPerHive = Number(amount) / selectedHiveIds.length;
+
+    selectedHiveIds.forEach(hiveId => {
+      addYield({
+        hiveId,
+        type: yieldType,
+        amount: amountPerHive,
+        unit: 'kg',
+        date: new Date(date).toISOString(),
+        notes: notes.trim() || undefined,
+      });
     });
 
-    Alert.alert('Úspech', 'Úroda bola pridaná', [
+    const hiveText = selectedHiveIds.length === 1 ? 'úľa' : `${selectedHiveIds.length} úľov`;
+    Alert.alert('Úspech', `Výnos bol pridaný pre ${hiveText}`, [
       { text: 'OK', onPress: () => router.back() }
     ]);
   };
@@ -77,7 +79,7 @@ export default function AddHarvestScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <Stack.Screen 
         options={{
-          title: 'Pridať úrodu',
+          title: 'Pridať výnos',
           headerShown: true,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
@@ -94,9 +96,14 @@ export default function AddHarvestScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Výber úľa</Text>
+          <Text style={styles.sectionTitle}>Výber úľov</Text>
           {currentApiary && (
             <Text style={styles.sectionSubtitle}>Včelnica: {currentApiary.name}</Text>
+          )}
+          {selectedHiveIds.length > 0 && (
+            <Text style={styles.selectedCount}>
+              Vybrané: {selectedHiveIds.length} {selectedHiveIds.length === 1 ? 'úľ' : 'úľov'}
+            </Text>
           )}
           {hives.length === 0 ? (
             <View style={styles.noHivesContainer}>
@@ -108,30 +115,57 @@ export default function AddHarvestScreen() {
               </Text>
             </View>
           ) : (
-            <View style={styles.hivesList}>
-              {hives.map(hive => (
+            <>
+              <View style={styles.selectAllContainer}>
                 <TouchableOpacity
-                  key={hive.id}
-                  style={[
-                    styles.hiveItem,
-                    selectedHiveId === hive.id && styles.hiveItemSelected
-                  ]}
-                  onPress={() => setSelectedHiveId(hive.id)}
+                  style={styles.selectAllButton}
+                  onPress={() => {
+                    if (selectedHiveIds.length === hives.length) {
+                      setSelectedHiveIds([]);
+                    } else {
+                      setSelectedHiveIds(hives.map(h => h.id));
+                    }
+                  }}
                 >
-                  <Text style={[
-                    styles.hiveItemText,
-                    selectedHiveId === hive.id && styles.hiveItemTextSelected
-                  ]}>
-                    {hive.name}
+                  <Text style={styles.selectAllText}>
+                    {selectedHiveIds.length === hives.length ? 'Zrušiť výber' : 'Vybrať všetky'}
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </View>
+              </View>
+              <View style={styles.hivesList}>
+                {hives.map(hive => {
+                  const isSelected = selectedHiveIds.includes(hive.id);
+                  return (
+                    <TouchableOpacity
+                      key={hive.id}
+                      style={[
+                        styles.hiveItem,
+                        isSelected && styles.hiveItemSelected
+                      ]}
+                      onPress={() => {
+                        if (isSelected) {
+                          setSelectedHiveIds(prev => prev.filter(id => id !== hive.id));
+                        } else {
+                          setSelectedHiveIds(prev => [...prev, hive.id]);
+                        }
+                      }}
+                    >
+                      <Text style={[
+                        styles.hiveItemText,
+                        isSelected && styles.hiveItemTextSelected
+                      ]}>
+                        {hive.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
           )}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Typ úrody</Text>
+          <Text style={styles.sectionTitle}>Typ výnosu</Text>
           <View style={styles.typesList}>
             {yieldTypes.map(type => (
               <TouchableOpacity
@@ -154,35 +188,23 @@ export default function AddHarvestScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Množstvo a jednotka</Text>
+          <Text style={styles.sectionTitle}>Množstvo (kg)</Text>
           <View style={styles.amountContainer}>
             <TextInput
               style={styles.amountInput}
               value={amount}
               onChangeText={setAmount}
-              placeholder="0"
-              keyboardType="numeric"
+              placeholder="0.00"
+              keyboardType="decimal-pad"
               placeholderTextColor="#9ca3af"
             />
-            <View style={styles.unitsList}>
-              {units.map(unitOption => (
-                <TouchableOpacity
-                  key={unitOption}
-                  style={[
-                    styles.unitItem,
-                    unit === unitOption && styles.unitItemSelected
-                  ]}
-                  onPress={() => setUnit(unitOption)}
-                >
-                  <Text style={[
-                    styles.unitItemText,
-                    unit === unitOption && styles.unitItemTextSelected
-                  ]}>
-                    {unitOption}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Text style={styles.unitLabel}>kg</Text>
+            {selectedHiveIds.length > 1 && (
+              <Text style={styles.distributionNote}>
+                Množstvo bude rozdelené medzi {selectedHiveIds.length} úľov
+                ({(Number(amount) / selectedHiveIds.length || 0).toFixed(2)} kg na úľ)
+              </Text>
+            )}
           </View>
         </View>
 
@@ -225,7 +247,7 @@ export default function AddHarvestScreen() {
             style={styles.notesInput}
             value={notes}
             onChangeText={setNotes}
-            placeholder="Pridajte poznámky k úrode..."
+            placeholder="Pridajte poznámky k výnosu..."
             placeholderTextColor="#9ca3af"
             multiline
             numberOfLines={4}
@@ -351,6 +373,41 @@ const styles = StyleSheet.create({
   },
   unitItemTextSelected: {
     color: '#ffffff',
+  },
+  selectAllContainer: {
+    marginBottom: 12,
+  },
+  selectAllButton: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  selectAllText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  selectedCount: {
+    fontSize: 14,
+    color: '#3b82f6',
+    fontWeight: '500',
+    marginBottom: 12,
+  },
+  unitLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  distributionNote: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   dateContainer: {
     gap: 16,

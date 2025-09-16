@@ -35,7 +35,7 @@ export interface Task {
 export interface Yield {
   id: string;
   hiveId: string;
-  type: 'med' | 'pel' | 'propolis' | 'ine';
+  type: 'med' | 'pel' | 'propolis' | 'vosk';
   amount: number;
   unit: string;
   date: string;
