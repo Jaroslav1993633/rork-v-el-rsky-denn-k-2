@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, Plus, Edit3, Trash2, Navigation, ExternalLink } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
+import { router } from 'expo-router';
 import type { Apiary } from '@/types/beekeeping';
 
 const FLIGHT_RANGES = [
@@ -188,7 +189,10 @@ export default function ApiariesScreen() {
               <TouchableOpacity 
                 key={apiary.id} 
                 style={styles.apiaryCard}
-                onPress={() => router.push(`/apiary/${apiary.id}`)}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  router.push(`/apiary/${apiary.id}`);
+                }}
               >
                 <View style={styles.apiaryHeader}>
                   <View style={styles.apiaryInfo}>
