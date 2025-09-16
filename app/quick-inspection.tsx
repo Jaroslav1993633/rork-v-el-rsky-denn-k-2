@@ -110,11 +110,12 @@ export default function QuickInspectionScreen() {
       setSelectAll(false);
       
       const message = selectedHiveIds.length === 1 
-        ? `${currentConfig.label} bola pridaná`
-        : `${currentConfig.label} bola pridaná pre ${selectedHiveIds.length} úľov`;
+        ? `${currentConfig.label} bola úspešne uložená pre úľ`
+        : `${currentConfig.label} bola úspešne uložená pre ${selectedHiveIds.length} úľov`;
       
-      Alert.alert('Úspech', message, [
-        { text: 'OK', onPress: () => router.back() }
+      Alert.alert('✅ Uložené!', message, [
+        { text: 'Pokračovať', onPress: () => router.back() },
+        { text: 'Pridať ďalšiu', style: 'cancel' }
       ]);
     } catch (error) {
       console.error('Error adding inspections:', error);
