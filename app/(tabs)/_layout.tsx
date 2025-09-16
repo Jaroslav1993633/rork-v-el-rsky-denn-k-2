@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, Hexagon, BarChart3, Bell, Settings, MapPin } from "lucide-react-native";
+import { Home, Hexagon, BarChart3, Bell, Settings } from "lucide-react-native";
 import React from "react";
 
 export default function TabLayout() {
@@ -48,13 +48,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <Bell color={color} size={size} />,
         }}
       />
-      <Tabs.Screen
-        name="apiaries"
-        options={{
-          title: "Vcelnice",
-          tabBarIcon: ({ color, size }) => <MapPin color={color} size={size} />,
-        }}
-      />
+
       <Tabs.Screen
         name="settings"
         options={{
