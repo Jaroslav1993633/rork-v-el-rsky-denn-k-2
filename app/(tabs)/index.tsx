@@ -8,19 +8,39 @@ import {
   Modal,
   TextInput,
   Alert,
+  FlatList,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Plus, Eye, Bell, BarChart3, Hexagon, ChevronDown, MapPin, Edit3 } from 'lucide-react-native';
+import { Plus, Eye, Bell, BarChart3, Hexagon, ChevronDown, MapPin, Edit3, ChevronRight, ClipboardList, Package } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import TrialBanner from '@/components/TrialBanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { Hive } from '@/types/beekeeping';
+
+const hiveTypeLabels = {
+  odlozenec: 'Odloženec',
+  roj: 'Roj',
+  zabehnutaRodina: 'Zabehnutá rodina',
+  kupeneVcelstvo: 'Kúpené včelstvo',
+};
+
+const queenEggLayingLabels = {
+  lozi: 'Loží',
+  nelozi: 'Neloží',
+};
+
+const queenStatusLabels = {
+  stara: 'Stará matka',
+  nova: 'Nová matka',
+  vylahne: 'Ide sa vyliahnuť',
+};
 
 export default function DashboardScreen() {
   const {
     getThisMonthInspections,
     getPendingTasks,
     getThisYearYield,
-    getActiveHiveCount,
+
     apiaries,
     getCurrentApiary,
     getCurrentApiaryHives,
@@ -43,6 +63,8 @@ export default function DashboardScreen() {
   const pendingTasks = getPendingTasks();
   const thisYearYield = getThisYearYield();
   const activeHiveCount = currentApiaryHives.length;
+  
+
 
   const StatCard = ({ 
     title, 
@@ -68,23 +90,78 @@ export default function DashboardScreen() {
     </TouchableOpacity>
   );
 
-  const QuickAction = ({ 
-    title, 
-    onPress, 
-    icon: Icon,
-    color = "#22c55e"
-  }: { 
-    title: string; 
-    onPress: () => void;
-    icon: any;
-    color?: string;
-  }) => (
-    <TouchableOpacity style={styles.quickAction} onPress={onPress}>
-      <View style={[styles.quickActionIcon, { backgroundColor: color }]}>
-        <Icon color="#ffffff" size={20} />
-      </View>
-      <Text style={styles.quickActionTitle}>{title}</Text>
-    </TouchableOpacity>
+
+
+  const renderHiveItem = React.useCallback(({ item }: { item: Hive }) => {
+    
+    return (
+      <TouchableOpacity 
+        style={styles.hiveCard}
+        onPress={() => router.push(`/hive/${item.id}`)}
+      >
+        <View style={styles.hiveHeader}>
+          <View style={styles.hiveIcon}>
+            <Hexagon color="#22c55e" size={24} />
+          </View>
+          <View style={styles.hiveInfo}>
+            <Text style={styles.hiveName}>{item.name}</Text>
+            <Text style={styles.hiveType}>{hiveTypeLabels[item.type]}</Text>
+          </View>
+          <ChevronRight color="#9ca3af" size={20} />
+        </View>
+        
+        <View style={styles.hiveDetails}>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Rámiky:</Text>
+            <Text style={styles.detailValue}>{item.frameCount}</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Matka:</Text>
+            <Text style={styles.detailValue}>{queenStatusLabels[item.queenStatus]}</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Kladenie vajíčok:</Text>
+            <Text style={styles.detailValue}>{queenEggLayingLabels[item.queenEggLaying]}</Text>
+          </View>
+          {item.queenColor && (
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Farba matky:</Text>
+              <View style={styles.colorIndicator}>
+                <Text style={styles.detailValue}>{item.queenColor}</Text>
+              </View>
+            </View>
+          )}
+          {item.colonyFoundingDate && (
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Založenie rodiny:</Text>
+              <Text style={styles.detailValue}>
+                {new Date(item.colonyFoundingDate).toLocaleDateString('sk-SK')}
+              </Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  }, []);
+
+  const EmptyHivesState = () => (
+    <View style={styles.emptyHivesState}>
+      <Hexagon color="#d1d5db" size={48} />
+      <Text style={styles.emptyHivesTitle}>Žiadne úle</Text>
+      <Text style={styles.emptyHivesDescription}>
+        {currentApiary 
+          ? `Pridajte prvý úľ do včelnice ${currentApiary.name}`
+          : 'Pridajte svoj prvý úľ a začnite viesť denník'
+        }
+      </Text>
+      <TouchableOpacity 
+        style={styles.addHiveButton}
+        onPress={() => router.push('/modal')}
+      >
+        <Plus color="#ffffff" size={16} />
+        <Text style={styles.addHiveButtonText}>Pridať úľ</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -190,31 +267,63 @@ export default function DashboardScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Rýchle akcie</Text>
-          <View style={styles.quickActions}>
-            <QuickAction
-              title="Pridať nový úľ"
+          <View style={styles.quickActionsGrid}>
+            <TouchableOpacity 
+              style={styles.quickActionCard}
               onPress={() => router.push('/modal')}
-              icon={Plus}
-            />
-            <QuickAction
-              title="Prehliadka úľa"
+            >
+              <View style={[styles.quickActionCardIcon, { backgroundColor: '#22c55e' }]}>
+                <Plus color="#ffffff" size={20} />
+              </View>
+              <Text style={styles.quickActionCardText}>Pridať úľ</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.quickActionCard}
               onPress={() => router.push('/quick-inspection')}
-              icon={Eye}
-              color="#3b82f6"
-            />
-            <QuickAction
-              title="Zobraziť pripomienky"
+            >
+              <View style={[styles.quickActionCardIcon, { backgroundColor: '#3b82f6' }]}>
+                <ClipboardList color="#ffffff" size={20} />
+              </View>
+              <Text style={styles.quickActionCardText}>Rýchla prehliadka</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.quickActionCard}
+              onPress={() => router.push('/add-harvest')}
+            >
+              <View style={[styles.quickActionCardIcon, { backgroundColor: '#f59e0b' }]}>
+                <Package color="#ffffff" size={20} />
+              </View>
+              <Text style={styles.quickActionCardText}>Pridať úrodu</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.quickActionCard}
               onPress={() => router.push('/reminders')}
-              icon={Bell}
-              color="#f59e0b"
-            />
-            <QuickAction
-              title="Štatistiky a analýzy"
-              onPress={() => router.push('/statistics')}
-              icon={BarChart3}
-              color="#8b5cf6"
-            />
+            >
+              <View style={[styles.quickActionCardIcon, { backgroundColor: '#8b5cf6' }]}>
+                <Bell color="#ffffff" size={20} />
+              </View>
+              <Text style={styles.quickActionCardText}>Upozornenie</Text>
+            </TouchableOpacity>
           </View>
+        </View>
+        
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Moje úle</Text>
+          {currentApiaryHives.length === 0 ? (
+            <EmptyHivesState />
+          ) : (
+            <FlatList
+              data={currentApiaryHives}
+              renderItem={renderHiveItem}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+              contentContainerStyle={styles.hivesList}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
         </View>
       </ScrollView>
       
@@ -388,31 +497,133 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
   },
-  quickActions: {
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
-  quickAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  quickActionCard: {
+    flex: 1,
+    minWidth: '45%',
     backgroundColor: '#f9fafb',
-    padding: 16,
     borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    gap: 12,
   },
-  quickActionIcon: {
+  quickActionCardIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 8,
   },
-  quickActionTitle: {
-    fontSize: 16,
+  quickActionCardText: {
+    fontSize: 13,
     fontWeight: '500',
     color: '#111827',
+    textAlign: 'center',
+  },
+  hivesList: {
+    gap: 12,
+  },
+  hiveCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  hiveHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  hiveIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f0fdf4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  hiveInfo: {
     flex: 1,
+  },
+  hiveName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  hiveType: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  hiveDetails: {
+    gap: 8,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#111827',
+  },
+  colorIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  emptyHivesState: {
+    alignItems: 'center',
+    padding: 32,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  emptyHivesTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  emptyHivesDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  addHiveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#22c55e',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  addHiveButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   addApiaryButton: {
     flexDirection: 'row',
