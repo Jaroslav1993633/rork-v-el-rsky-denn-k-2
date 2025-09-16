@@ -210,6 +210,11 @@ export default function StatisticsScreen() {
   const yieldByType = getYieldByType(selectedYearForStats);
   const yieldByHive = getYieldByTypeAndHive(selectedYearForStats);
   
+  // Debug logging for yields
+  console.log('Statistics - Total yields:', yields.length);
+  console.log('Statistics - Filtered yields for year', selectedYearForStats, ':', Object.keys(yieldByHive).length);
+  console.log('Statistics - YieldByHive data:', yieldByHive);
+  
   const getInspectionsByYear = (year: number) => {
     return inspections.filter(inspection => {
       const inspectionYear = new Date(inspection.date).getFullYear();
@@ -267,10 +272,17 @@ export default function StatisticsScreen() {
           style: 'destructive',
           onPress: () => {
             console.log('Deleting yield with ID:', yieldItem.id);
-            deleteYield(yieldItem.id);
+            console.log('Current yields before delete:', yields.length);
+            
+            // Close modal first
             setEditingYield(null);
             setEditAmount('');
             setEditNotes('');
+            
+            // Delete the yield
+            deleteYield(yieldItem.id);
+            
+            console.log('Delete function called');
             Alert.alert('Úspech', 'Výnos bol zmazaný');
           }
         }
