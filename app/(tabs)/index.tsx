@@ -5,9 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Modal,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Plus, Eye, Bell, BarChart3, Hexagon } from 'lucide-react-native';
+import { Plus, Eye, Bell, BarChart3, Hexagon, ChevronDown, MapPin } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import TrialBanner from '@/components/TrialBanner';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,13 +21,24 @@ export default function DashboardScreen() {
     getPendingTasks,
     getThisYearYield,
     getActiveHiveCount,
+    apiaries,
+    getCurrentApiary,
+    getCurrentApiaryHives,
+    setCurrentApiary,
+    addApiary,
   } = useBeekeeping();
   const insets = useSafeAreaInsets();
 
+  const [showApiarySelector, setShowApiarySelector] = React.useState(false);
+  const [showAddApiaryModal, setShowAddApiaryModal] = React.useState(false);
+  const [newApiaryName, setNewApiaryName] = React.useState('');
+  
+  const currentApiary = getCurrentApiary();
+  const currentApiaryHives = getCurrentApiaryHives();
   const thisMonthInspections = getThisMonthInspections();
   const pendingTasks = getPendingTasks();
   const thisYearYield = getThisYearYield();
-  const activeHiveCount = getActiveHiveCount();
+  const activeHiveCount = currentApiaryHives.length;
 
   const StatCard = ({ 
     title, 
@@ -76,14 +90,63 @@ export default function DashboardScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Včelársky denník</Text>
-          <Text style={styles.subtitle}>Prehľad vašej včelnice</Text>
+          
+          {/* Add Apiary Button */}
+          <TouchableOpacity 
+            style={styles.addApiaryButton}
+            onPress={() => setShowAddApiaryModal(true)}
+            disabled={apiaries.length >= 5}
+          >
+            <Plus color="#22c55e" size={16} />
+            <Text style={[styles.addApiaryText, apiaries.length >= 5 && styles.disabledText]}>Pridať včelnicu</Text>
+          </TouchableOpacity>
+          
+          {/* Apiary Selector */}
+          <TouchableOpacity 
+            style={styles.apiarySelector}
+            onPress={() => setShowApiarySelector(!showApiarySelector)}
+          >
+            <View style={styles.apiarySelectorContent}>
+              <MapPin color="#6b7280" size={16} />
+              <Text style={styles.apiaryName}>
+                {currentApiary?.name || 'Žiadna včelnica'}
+              </Text>
+              <ChevronDown color="#6b7280" size={16} />
+            </View>
+          </TouchableOpacity>
+          
+          {/* Apiary Dropdown */}
+          {showApiarySelector && (
+            <View style={styles.apiaryDropdown}>
+              {apiaries.map((apiary) => (
+                <TouchableOpacity
+                  key={apiary.id}
+                  style={[
+                    styles.apiaryOption,
+                    currentApiary?.id === apiary.id && styles.selectedApiaryOption
+                  ]}
+                  onPress={() => {
+                    setCurrentApiary(apiary.id);
+                    setShowApiarySelector(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.apiaryOptionText,
+                    currentApiary?.id === apiary.id && styles.selectedApiaryOptionText
+                  ]}>
+                    {apiary.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Prehľad</Text>
           <View style={styles.statsGrid}>
             <StatCard
-              title="Úle celkom"
+              title="Úle v tejto včelnici"
               value={activeHiveCount}
               onPress={() => router.push('/hives')}
               icon={Hexagon}
@@ -138,6 +201,61 @@ export default function DashboardScreen() {
           </View>
         </View>
       </ScrollView>
+      
+      {/* Add Apiary Modal */}
+      <Modal
+        visible={showAddApiaryModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAddApiaryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Pridať novú včelnicu</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Názov včelnice"
+              value={newApiaryName}
+              onChangeText={setNewApiaryName}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowAddApiaryModal(false);
+                  setNewApiaryName('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Zrušiť</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={() => {
+                  if (newApiaryName.trim()) {
+                    const apiaryNumber = apiaries.length + 1;
+                    addApiary({
+                      name: newApiaryName.trim(),
+                      location: {
+                        latitude: 48.1486,
+                        longitude: 17.1077,
+                        address: 'Slovensko'
+                      },
+                      description: `Včelnica č.${apiaryNumber}`
+                    });
+                    setShowAddApiaryModal(false);
+                    setNewApiaryName('');
+                  } else {
+                    Alert.alert('Chyba', 'Zadajte názov včelnice');
+                  }
+                }}
+              >
+                <Text style={styles.confirmButtonText}>Pridať</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -229,5 +347,132 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#111827',
     flex: 1,
+  },
+  addApiaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    marginBottom: 16,
+    gap: 6,
+  },
+  addApiaryText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#22c55e',
+  },
+  disabledText: {
+    color: '#9ca3af',
+  },
+  apiarySelector: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 16,
+  },
+  apiarySelectorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 8,
+  },
+  apiaryName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827',
+    flex: 1,
+  },
+  apiaryDropdown: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginTop: -8,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  apiaryOption: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  selectedApiaryOption: {
+    backgroundColor: '#f0fdf4',
+  },
+  apiaryOptionText: {
+    fontSize: 16,
+    color: '#111827',
+  },
+  selectedApiaryOptionText: {
+    color: '#22c55e',
+    fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f3f4f6',
+  },
+  confirmButton: {
+    backgroundColor: '#22c55e',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#ffffff',
   },
 });

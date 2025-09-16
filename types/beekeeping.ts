@@ -77,4 +77,5 @@ export interface AppState {
   apiaries: Apiary[];
   trialStartDate: string | null;
   isRegistered: boolean;
+  currentApiaryId?: string;
 }

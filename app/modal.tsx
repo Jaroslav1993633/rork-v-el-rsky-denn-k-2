@@ -42,7 +42,8 @@ const queenColors = [
 ];
 
 export default function AddHiveModal() {
-  const { addHive, apiaries } = useBeekeeping();
+  const { addHive, apiaries, getCurrentApiary } = useBeekeeping();
+  const currentApiary = getCurrentApiary();
   
   const [name, setName] = useState('');
   const [type, setType] = useState<'odlozenec' | 'roj' | 'zabehnutaRodina' | 'kupeneVcelstvo'>('odlozenec');
@@ -52,7 +53,7 @@ export default function AddHiveModal() {
   const [queenColorName, setQueenColorName] = useState('Neoznačená');
   const [queenEggLayingStatus, setQueenEggLayingStatus] = useState<'lozi' | 'nelozi'>('lozi');
   const [colonyFoundingDate, setColonyFoundingDate] = useState('');
-  const [selectedApiaryId, setSelectedApiaryId] = useState<string | undefined>(undefined);
+  const [selectedApiaryId, setSelectedApiaryId] = useState<string | undefined>(currentApiary?.id);
 
   const handleSave = () => {
     if (!name.trim()) {

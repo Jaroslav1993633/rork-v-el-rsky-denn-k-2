@@ -31,11 +31,14 @@ const queenStatusLabels = {
 };
 
 export default function HivesScreen() {
-  const { hives, apiaries } = useBeekeeping();
+  const { hives, apiaries, getCurrentApiary, getCurrentApiaryHives } = useBeekeeping();
   const insets = useSafeAreaInsets();
+  
+  const currentApiary = getCurrentApiary();
+  const currentApiaryHives = getCurrentApiaryHives();
 
-  // Filter out deleted hives
-  const activeHives = hives.filter(hive => !hive.isDeleted);
+  // Filter out deleted hives from current apiary
+  const activeHives = currentApiaryHives;
   
   // Debug logging
   console.log('Hives screen - Total hives:', hives.length);
@@ -104,7 +107,10 @@ export default function HivesScreen() {
       <Hexagon color="#d1d5db" size={64} />
       <Text style={styles.emptyTitle}>Žiadne úle</Text>
       <Text style={styles.emptyDescription}>
-        Pridajte svoj prvý úľ a začnite viesť denník
+        {currentApiary 
+          ? `Pridajte prvý úľ do včelnice ${currentApiary.name}`
+          : 'Pridajte svoj prvý úľ a začnite viesť denník'
+        }
       </Text>
       <TouchableOpacity 
         style={styles.addButton}
@@ -119,7 +125,12 @@ export default function HivesScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Moje úle</Text>
+        <View>
+          <Text style={styles.title}>Moje úle</Text>
+          {currentApiary && (
+            <Text style={styles.subtitle}>{currentApiary.name}</Text>
+          )}
+        </View>
         <TouchableOpacity 
           style={styles.headerButton}
           onPress={() => router.push('/modal')}
@@ -273,5 +284,10 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 2,
   },
 });

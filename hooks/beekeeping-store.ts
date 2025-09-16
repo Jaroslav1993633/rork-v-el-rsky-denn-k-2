@@ -17,6 +17,7 @@ const initialState: AppState = {
   apiaries: [],
   trialStartDate: null,
   isRegistered: false,
+  currentApiaryId: undefined,
 };
 
 export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
@@ -39,16 +40,36 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
         setState(data);
       } else {
         // First time user - start trial with sample data
+        // Create default apiary
+        const defaultApiary: Apiary = {
+          id: '1',
+          name: 'Včelnica č.1',
+          location: {
+            latitude: 48.1486,
+            longitude: 17.1077,
+            address: 'Bratislava, Slovensko'
+          },
+          description: 'Hlavná včelnica',
+          createdAt: new Date().toISOString(),
+        };
+        
+        // Assign sample hives to default apiary
+        const hivesWithApiary = sampleHives.map(hive => ({
+          ...hive,
+          apiaryId: defaultApiary.id
+        }));
+        
         const newState = {
           ...initialState,
-          hives: sampleHives,
+          hives: hivesWithApiary,
           inspections: sampleInspections,
           tasks: sampleTasks,
           yields: sampleYields,
           monthlyStats: [],
           yearlyStats: [],
-          apiaries: [],
+          apiaries: [defaultApiary],
           trialStartDate: new Date().toISOString(),
+          currentApiaryId: defaultApiary.id,
         };
         setState(newState);
         try {
@@ -421,8 +442,27 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
     };
-    updateState(prevState => ({ apiaries: [...(prevState.apiaries || []), newApiary] }));
+    updateState(prevState => ({ 
+      apiaries: [...(prevState.apiaries || []), newApiary],
+      currentApiaryId: newApiary.id // Switch to new apiary
+    }));
   }, [updateState]);
+  
+  const setCurrentApiary = useCallback((apiaryId: string) => {
+    updateState({ currentApiaryId: apiaryId });
+  }, [updateState]);
+  
+  const getCurrentApiary = useCallback(() => {
+    if (!state.currentApiaryId) return null;
+    return (state.apiaries || []).find(apiary => apiary.id === state.currentApiaryId) || null;
+  }, [state.apiaries, state.currentApiaryId]);
+  
+  const getCurrentApiaryHives = useCallback(() => {
+    if (!state.currentApiaryId) return [];
+    return (state.hives || []).filter(hive => 
+      hive.apiaryId === state.currentApiaryId && !hive.isDeleted
+    );
+  }, [state.hives, state.currentApiaryId]);
 
   const updateApiary = useCallback((id: string, updates: Partial<Apiary>) => {
     updateState(prevState => ({
@@ -488,6 +528,9 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     addApiary,
     updateApiary,
     deleteApiary,
+    setCurrentApiary,
+    getCurrentApiary,
+    getCurrentApiaryHives,
   }), [
     state,
     isLoading,
@@ -519,5 +562,8 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     addApiary,
     updateApiary,
     deleteApiary,
+    setCurrentApiary,
+    getCurrentApiary,
+    getCurrentApiaryHives,
   ]);
 });
