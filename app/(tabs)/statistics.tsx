@@ -6,8 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Modal,
+  TextInput,
 } from 'react-native';
-import { BarChart3, TrendingUp, Hexagon, Calendar, RotateCcw, ChevronDown, ChevronUp, Plus, CalendarDays } from 'lucide-react-native';
+import { BarChart3, TrendingUp, Hexagon, Calendar, RotateCcw, ChevronDown, ChevronUp, Plus, CalendarDays, Edit3, X } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -26,6 +28,8 @@ export default function StatisticsScreen() {
     getHistoricalStats,
     getActiveHiveCount,
     getHiveCountByYear,
+    updateYield,
+    deleteYield,
   } = useBeekeeping();
   const insets = useSafeAreaInsets();
   
@@ -37,6 +41,9 @@ export default function StatisticsScreen() {
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [selectedYearForStats, setSelectedYearForStats] = useState(currentYear);
   const [showHiveYields, setShowHiveYields] = useState(false);
+  const [editingYield, setEditingYield] = useState<any>(null);
+  const [editAmount, setEditAmount] = useState('');
+  const [editNotes, setEditNotes] = useState('');
 
   const thisMonthInspections = getThisMonthInspections();
   const thisYearYield = getThisYearYield();
@@ -164,10 +171,11 @@ export default function StatisticsScreen() {
       }
       
       if (!acc[hiveName]) {
-        acc[hiveName] = { total: 0, byType: {} };
+        acc[hiveName] = { total: 0, byType: {}, yields: [] };
       }
       
       acc[hiveName].total += yieldItem.amount;
+      acc[hiveName].yields.push(yieldItem);
       
       if (!acc[hiveName].byType[yieldItem.type]) {
         acc[hiveName].byType[yieldItem.type] = 0;
@@ -175,7 +183,7 @@ export default function StatisticsScreen() {
       acc[hiveName].byType[yieldItem.type] += yieldItem.amount;
       
       return acc;
-    }, {} as Record<string, { total: number; byType: Record<string, number> }>);
+    }, {} as Record<string, { total: number; byType: Record<string, number>; yields: any[] }>);
 
     return yieldByHive;
   };
@@ -197,6 +205,60 @@ export default function StatisticsScreen() {
     pel: 'Peľ',
     propolis: 'Propolis',
     ine: 'Iné',
+  };
+
+  const handleEditYield = (yieldItem: any) => {
+    setEditingYield(yieldItem);
+    setEditAmount(yieldItem.amount.toString());
+    setEditNotes(yieldItem.notes || '');
+  };
+
+  const handleSaveYield = () => {
+    if (!editingYield || !editAmount.trim()) {
+      Alert.alert('Chyba', 'Množstvo je povinné');
+      return;
+    }
+
+    const amount = parseFloat(editAmount);
+    if (isNaN(amount) || amount < 0) {
+      Alert.alert('Chyba', 'Zadajte platné množstvo');
+      return;
+    }
+
+    updateYield(editingYield.id, {
+      amount,
+      notes: editNotes.trim(),
+    });
+
+    setEditingYield(null);
+    setEditAmount('');
+    setEditNotes('');
+    
+    Alert.alert('Úspech', 'Výnos bol úspešne upravený');
+  };
+
+  const handleDeleteYield = (yieldItem: any) => {
+    Alert.alert(
+      'Zmazať výnos',
+      'Naozaj chcete zmazať tento výnos?',
+      [
+        { text: 'Zrušiť', style: 'cancel' },
+        {
+          text: 'Zmazať',
+          style: 'destructive',
+          onPress: () => {
+            deleteYield(yieldItem.id);
+            Alert.alert('Úspech', 'Výnos bol zmazaný');
+          }
+        }
+      ]
+    );
+  };
+
+  const handleCancelEdit = () => {
+    setEditingYield(null);
+    setEditAmount('');
+    setEditNotes('');
   };
 
   return (
@@ -336,6 +398,31 @@ export default function StatisticsScreen() {
                     </Text>
                   ))}
                 </View>
+                <View style={styles.yieldItemsList}>
+                  {data.yields.map((yieldItem: any) => (
+                    <View key={yieldItem.id} style={styles.individualYieldItem}>
+                      <View style={styles.yieldItemInfo}>
+                        <Text style={styles.yieldItemDate}>
+                          {new Date(yieldItem.date).toLocaleDateString('sk-SK')}
+                        </Text>
+                        <Text style={styles.yieldItemDetails}>
+                          {yieldTypeLabels[yieldItem.type as keyof typeof yieldTypeLabels] || yieldItem.type}: {yieldItem.amount} kg
+                        </Text>
+                        {yieldItem.notes && (
+                          <Text style={styles.yieldItemNotes}>{yieldItem.notes}</Text>
+                        )}
+                      </View>
+                      <View style={styles.yieldItemActions}>
+                        <TouchableOpacity
+                          style={styles.editButton}
+                          onPress={() => handleEditYield(yieldItem)}
+                        >
+                          <Edit3 color="#3b82f6" size={16} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                </View>
               </View>
             ))}
             {Object.keys(yieldByHive).length === 0 && (
@@ -396,6 +483,82 @@ export default function StatisticsScreen() {
       >
         <Plus color="#ffffff" size={24} />
       </TouchableOpacity>
+
+      <Modal
+        visible={editingYield !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={handleCancelEdit}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Upraviť výnos</Text>
+              <TouchableOpacity onPress={handleCancelEdit}>
+                <X color="#6b7280" size={24} />
+              </TouchableOpacity>
+            </View>
+            
+            {editingYield && (
+              <View style={styles.modalBody}>
+                <Text style={styles.modalLabel}>Rodina:</Text>
+                <Text style={styles.modalValue}>
+                  {hives.find(h => h.id === editingYield.hiveId)?.name || `Úľ ${editingYield.hiveId}`}
+                </Text>
+                
+                <Text style={styles.modalLabel}>Typ:</Text>
+                <Text style={styles.modalValue}>
+                  {yieldTypeLabels[editingYield.type as keyof typeof yieldTypeLabels] || editingYield.type}
+                </Text>
+                
+                <Text style={styles.modalLabel}>Dátum:</Text>
+                <Text style={styles.modalValue}>
+                  {new Date(editingYield.date).toLocaleDateString('sk-SK')}
+                </Text>
+                
+                <Text style={styles.modalLabel}>Množstvo (kg):</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={editAmount}
+                  onChangeText={setEditAmount}
+                  keyboardType="numeric"
+                  placeholder="Zadajte množstvo"
+                />
+                
+                <Text style={styles.modalLabel}>Poznámky:</Text>
+                <TextInput
+                  style={[styles.modalInput, styles.modalTextArea]}
+                  value={editNotes}
+                  onChangeText={setEditNotes}
+                  placeholder="Voliteľné poznámky"
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+            )}
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.deleteButton]}
+                onPress={() => {
+                  handleCancelEdit();
+                  if (editingYield) {
+                    handleDeleteYield(editingYield);
+                  }
+                }}
+              >
+                <Text style={styles.deleteButtonText}>Zmazať</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={handleSaveYield}
+              >
+                <Text style={styles.saveButtonText}>Uložiť</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -654,5 +817,126 @@ const styles = StyleSheet.create({
   hiveYieldType: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  yieldItemsList: {
+    marginTop: 12,
+    gap: 8,
+  },
+  individualYieldItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  yieldItemInfo: {
+    flex: 1,
+  },
+  yieldItemDate: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 2,
+  },
+  yieldItemDetails: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  yieldItemNotes: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontStyle: 'italic',
+  },
+  yieldItemActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  editButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#eff6ff',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  modalBody: {
+    marginBottom: 20,
+  },
+  modalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
+    marginTop: 12,
+  },
+  modalValue: {
+    fontSize: 16,
+    color: '#6b7280',
+    marginBottom: 8,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#ffffff',
+  },
+  modalTextArea: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  saveButton: {
+    backgroundColor: '#22c55e',
+  },
+  saveButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  deleteButton: {
+    backgroundColor: '#ef4444',
+  },
+  deleteButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
