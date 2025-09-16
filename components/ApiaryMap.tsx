@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Platform, Text } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import type { Apiary } from '@/types/beekeeping';
 
 interface ApiaryMapProps {
@@ -13,56 +13,7 @@ const FLIGHT_RANGES = [
   { distance: 5000, color: 'rgba(239, 68, 68, 0.1)', strokeColor: '#ef4444' }, // 5km - red
 ];
 
-// Native map component
-function NativeMapView({ apiary, style }: ApiaryMapProps) {
-  const MapView = require('react-native-maps').default;
-  const { Marker, Circle } = require('react-native-maps');
-  
-  const region = {
-    latitude: apiary.location.latitude,
-    longitude: apiary.location.longitude,
-    latitudeDelta: 0.1,
-    longitudeDelta: 0.1,
-  };
 
-  return (
-    <View style={[styles.container, style]}>
-      <MapView
-        style={styles.map}
-        initialRegion={region}
-        showsUserLocation={false}
-        showsMyLocationButton={false}
-        showsCompass={false}
-        toolbarEnabled={false}
-      >
-        {/* Flight range circles */}
-        {FLIGHT_RANGES.map((range) => (
-          <Circle
-            key={range.distance}
-            center={{
-              latitude: apiary.location.latitude,
-              longitude: apiary.location.longitude,
-            }}
-            radius={range.distance}
-            fillColor={range.color}
-            strokeColor={range.strokeColor}
-            strokeWidth={2}
-          />
-        ))}
-        
-        {/* Apiary marker */}
-        <Marker
-          coordinate={{
-            latitude: apiary.location.latitude,
-            longitude: apiary.location.longitude,
-          }}
-          title={apiary.name}
-          description={apiary.location.address || 'Vcelnica'}
-        />
-      </MapView>
-    </View>
-  );
-}
 
 // Web fallback component
 function WebMapView({ apiary, style }: ApiaryMapProps) {
@@ -94,11 +45,8 @@ function WebMapView({ apiary, style }: ApiaryMapProps) {
 }
 
 export default function ApiaryMap({ apiary, style }: ApiaryMapProps) {
-  if (Platform.OS === 'web') {
-    return <WebMapView apiary={apiary} style={style} />;
-  }
-  
-  return <NativeMapView apiary={apiary} style={style} />;
+  // Always use web fallback for now to avoid bundling issues
+  return <WebMapView apiary={apiary} style={style} />;
 }
 
 const styles = StyleSheet.create({
