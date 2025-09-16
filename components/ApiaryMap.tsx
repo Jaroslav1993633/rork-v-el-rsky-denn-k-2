@@ -1,15 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, Text } from 'react-native';
 import type { Apiary } from '@/types/beekeeping';
-
-// Conditionally import react-native-maps only on native platforms
-let MapView: any, Marker: any, Circle: any;
-if (Platform.OS !== 'web') {
-  const maps = require('react-native-maps');
-  MapView = maps.default;
-  Marker = maps.Marker;
-  Circle = maps.Circle;
-}
 
 interface ApiaryMapProps {
   apiary: Apiary;
@@ -22,32 +13,11 @@ const FLIGHT_RANGES = [
   { distance: 5000, color: 'rgba(239, 68, 68, 0.1)', strokeColor: '#ef4444' }, // 5km - red
 ];
 
-export default function ApiaryMap({ apiary, style }: ApiaryMapProps) {
-  if (Platform.OS === 'web') {
-    // Fallback for web - show a simple placeholder
-    return (
-      <View style={[styles.webFallback, style]}>
-        <View style={styles.webMapPlaceholder}>
-          <View style={styles.webMarker} />
-          {FLIGHT_RANGES.map((range, index) => (
-            <View
-              key={range.distance}
-              style={[
-                styles.webCircle,
-                {
-                  width: 80 + index * 40,
-                  height: 80 + index * 40,
-                  borderColor: range.strokeColor,
-                  backgroundColor: range.color,
-                },
-              ]}
-            />
-          ))}
-        </View>
-      </View>
-    );
-  }
-
+// Native map component
+function NativeMapView({ apiary, style }: ApiaryMapProps) {
+  const MapView = require('react-native-maps').default;
+  const { Marker, Circle } = require('react-native-maps');
+  
   const region = {
     latitude: apiary.location.latitude,
     longitude: apiary.location.longitude,
@@ -94,6 +64,43 @@ export default function ApiaryMap({ apiary, style }: ApiaryMapProps) {
   );
 }
 
+// Web fallback component
+function WebMapView({ apiary, style }: ApiaryMapProps) {
+  return (
+    <View style={[styles.webFallback, style]}>
+      <View style={styles.webMapPlaceholder}>
+        <Text style={styles.webMapText}>{apiary.name}</Text>
+        <Text style={styles.webMapSubtext}>
+          {apiary.location.address || `${apiary.location.latitude.toFixed(4)}, ${apiary.location.longitude.toFixed(4)}`}
+        </Text>
+        <View style={styles.webMarker} />
+        {FLIGHT_RANGES.map((range, index) => (
+          <View
+            key={range.distance}
+            style={[
+              styles.webCircle,
+              {
+                width: 80 + index * 40,
+                height: 80 + index * 40,
+                borderColor: range.strokeColor,
+                backgroundColor: range.color,
+              },
+            ]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+export default function ApiaryMap({ apiary, style }: ApiaryMapProps) {
+  if (Platform.OS === 'web') {
+    return <WebMapView apiary={apiary} style={style} />;
+  }
+  
+  return <NativeMapView apiary={apiary} style={style} />;
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -130,5 +137,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: 1000,
     borderWidth: 2,
+  },
+  webMapText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  webMapSubtext: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 20,
   },
 });
