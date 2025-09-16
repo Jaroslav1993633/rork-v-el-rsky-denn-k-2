@@ -299,8 +299,10 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     return (state.yields || [])
       .filter(yieldItem => {
         const hive = (state.hives || []).find(h => h.id === yieldItem.hiveId);
+        // Include yields from deleted hives if they belong to current apiary
+        // This preserves historical data
         return new Date(yieldItem.date).getFullYear() === currentYear &&
-               hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
+               hive && hive.apiaryId === state.currentApiaryId;
       })
       .reduce((total, yieldItem) => total + yieldItem.amount, 0);
   }, [state.yields, state.hives, state.currentApiaryId]);
@@ -373,6 +375,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     const inspectionCount = (state.inspections || []).filter(inspection => {
       const date = new Date(inspection.date);
       const hive = (state.hives || []).find(h => h.id === inspection.hiveId);
+      // Keep inspection count only for active hives
       return date.getFullYear() === year && 
              date.getMonth() === month &&
              hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
@@ -382,9 +385,10 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       .filter(yieldItem => {
         const date = new Date(yieldItem.date);
         const hive = (state.hives || []).find(h => h.id === yieldItem.hiveId);
+        // Include yields from deleted hives to preserve historical data
         return date.getFullYear() === year && 
                date.getMonth() === month &&
-               hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
+               hive && hive.apiaryId === state.currentApiaryId;
       })
       .reduce((total, yieldItem) => total + yieldItem.amount, 0);
 
@@ -423,6 +427,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     
     const yearInspections = (state.inspections || []).filter(inspection => {
       const hive = (state.hives || []).find(h => h.id === inspection.hiveId);
+      // Keep inspection count only for active hives
       return new Date(inspection.date).getFullYear() === currentYear &&
              hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
     }).length;
@@ -430,8 +435,9 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     const yearYield = (state.yields || [])
       .filter(yieldItem => {
         const hive = (state.hives || []).find(h => h.id === yieldItem.hiveId);
+        // Include yields from deleted hives to preserve historical data
         return new Date(yieldItem.date).getFullYear() === currentYear &&
-               hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
+               hive && hive.apiaryId === state.currentApiaryId;
       })
       .reduce((total, yieldItem) => total + yieldItem.amount, 0);
     
