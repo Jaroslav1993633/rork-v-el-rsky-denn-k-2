@@ -228,38 +228,59 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     
     return (state.inspections || []).filter(inspection => {
       const inspectionDate = new Date(inspection.date);
-      return inspectionDate.getMonth() === currentMonth && inspectionDate.getFullYear() === currentYear;
+      const hive = (state.hives || []).find(h => h.id === inspection.hiveId);
+      return inspectionDate.getMonth() === currentMonth && 
+             inspectionDate.getFullYear() === currentYear &&
+             hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
     }).length;
-  }, [state.inspections]);
+  }, [state.inspections, state.hives, state.currentApiaryId]);
 
   const getThisYearYield = useCallback(() => {
     const currentYear = new Date().getFullYear();
     
     return (state.yields || [])
-      .filter(yieldItem => new Date(yieldItem.date).getFullYear() === currentYear)
+      .filter(yieldItem => {
+        const hive = (state.hives || []).find(h => h.id === yieldItem.hiveId);
+        return new Date(yieldItem.date).getFullYear() === currentYear &&
+               hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
+      })
       .reduce((total, yieldItem) => total + yieldItem.amount, 0);
-  }, [state.yields]);
+  }, [state.yields, state.hives, state.currentApiaryId]);
 
   const getPendingTasks = useCallback(() => {
-    return (state.tasks || []).filter(task => !task.completed && new Date(task.dueDate) >= new Date());
-  }, [state.tasks]);
+    return (state.tasks || []).filter(task => {
+      const hive = (state.hives || []).find(h => h.id === task.hiveId);
+      return !task.completed && 
+             new Date(task.dueDate) >= new Date() &&
+             hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
+    });
+  }, [state.tasks, state.hives, state.currentApiaryId]);
 
   const getActiveHiveCount = useCallback(() => {
-    return (state.hives || []).filter(hive => !hive.isDeleted).length;
-  }, [state.hives]);
+    return (state.hives || []).filter(hive => 
+      !hive.isDeleted && hive.apiaryId === state.currentApiaryId
+    ).length;
+  }, [state.hives, state.currentApiaryId]);
 
   const getHiveCountByYear = useCallback((year: number) => {
     const currentYear = new Date().getFullYear();
     
-    // For current year, only count active (non-deleted) hives
+    // For current year, only count active (non-deleted) hives in current apiary
     if (year === currentYear) {
-      const activeCount = (state.hives || []).filter(hive => !hive.isDeleted).length;
-      console.log(`getHiveCountByYear(${year}) - current year active hives:`, activeCount);
+      const activeCount = (state.hives || []).filter(hive => 
+        !hive.isDeleted && hive.apiaryId === state.currentApiaryId
+      ).length;
+      console.log(`getHiveCountByYear(${year}) - current year active hives in apiary:`, activeCount);
       return activeCount;
     }
     
-    // For past years, count hives that existed during that year
+    // For past years, count hives that existed during that year in current apiary
     const count = (state.hives || []).filter(hive => {
+      // Must be in current apiary
+      if (hive.apiaryId !== state.currentApiaryId) {
+        return false;
+      }
+      
       const createdYear = new Date(hive.createdAt).getFullYear();
       
       // Hive must have been created by or during the specified year
@@ -278,22 +299,28 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       return true;
     }).length;
     
-    console.log(`getHiveCountByYear(${year}) - past year count:`, count);
+    console.log(`getHiveCountByYear(${year}) - past year count in apiary:`, count);
     
     return count;
-  }, [state.hives]);
+  }, [state.hives, state.currentApiaryId]);
 
   // Statistics calculation and management
   const calculateMonthlyStats = useCallback((year: number, month: number): MonthlyStats => {
     const inspectionCount = (state.inspections || []).filter(inspection => {
       const date = new Date(inspection.date);
-      return date.getFullYear() === year && date.getMonth() === month;
+      const hive = (state.hives || []).find(h => h.id === inspection.hiveId);
+      return date.getFullYear() === year && 
+             date.getMonth() === month &&
+             hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
     }).length;
 
     const yieldAmount = (state.yields || [])
       .filter(yieldItem => {
         const date = new Date(yieldItem.date);
-        return date.getFullYear() === year && date.getMonth() === month;
+        const hive = (state.hives || []).find(h => h.id === yieldItem.hiveId);
+        return date.getFullYear() === year && 
+               date.getMonth() === month &&
+               hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
       })
       .reduce((total, yieldItem) => total + yieldItem.amount, 0);
 
@@ -303,7 +330,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       inspectionCount,
       yieldAmount,
     };
-  }, [state.inspections, state.yields]);
+  }, [state.inspections, state.yields, state.hives, state.currentApiaryId]);
 
   const updateMonthlyStats = useCallback(() => {
     const currentDate = new Date();
@@ -330,12 +357,18 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   const updateYearlyStats = useCallback(() => {
     const currentYear = new Date().getFullYear();
     
-    const yearInspections = (state.inspections || []).filter(inspection => 
-      new Date(inspection.date).getFullYear() === currentYear
-    ).length;
+    const yearInspections = (state.inspections || []).filter(inspection => {
+      const hive = (state.hives || []).find(h => h.id === inspection.hiveId);
+      return new Date(inspection.date).getFullYear() === currentYear &&
+             hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
+    }).length;
     
     const yearYield = (state.yields || [])
-      .filter(yieldItem => new Date(yieldItem.date).getFullYear() === currentYear)
+      .filter(yieldItem => {
+        const hive = (state.hives || []).find(h => h.id === yieldItem.hiveId);
+        return new Date(yieldItem.date).getFullYear() === currentYear &&
+               hive && hive.apiaryId === state.currentApiaryId && !hive.isDeleted;
+      })
       .reduce((total, yieldItem) => total + yieldItem.amount, 0);
     
     const monthlyBreakdown: MonthlyStats[] = [];
@@ -363,7 +396,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     }
     
     updateState({ yearlyStats: updatedYearlyStats });
-  }, [state.inspections, state.yields, state.yearlyStats, calculateMonthlyStats, updateState]);
+  }, [state.inspections, state.yields, state.hives, state.yearlyStats, state.currentApiaryId, calculateMonthlyStats, updateState]);
 
   const resetMonthlyStats = useCallback(() => {
     const currentDate = new Date();

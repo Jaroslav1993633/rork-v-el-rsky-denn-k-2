@@ -30,6 +30,8 @@ export default function StatisticsScreen() {
     getHiveCountByYear,
     updateYield,
     deleteYield,
+    getCurrentApiary,
+    currentApiaryId,
   } = useBeekeeping();
   const insets = useSafeAreaInsets();
   
@@ -46,9 +48,10 @@ export default function StatisticsScreen() {
   const [editNotes, setEditNotes] = useState('');
   const [expandedHives, setExpandedHives] = useState<Set<string>>(new Set());
 
+  const currentApiary = getCurrentApiary();
   const thisMonthInspections = getThisMonthInspections();
   const thisYearYield = getThisYearYield();
-  const activeHives = hives.filter(hive => !hive.isDeleted);
+  const activeHives = hives.filter(hive => !hive.isDeleted && hive.apiaryId === currentApiaryId);
   const activeHiveCount = getActiveHiveCount();
   
   // Debug logging
@@ -58,7 +61,7 @@ export default function StatisticsScreen() {
   console.log('Statistics - Hives data:', hives.map(h => ({ id: h.id, name: h.name, isDeleted: h.isDeleted })));
   const averageInspectionsPerHive = activeHiveCount > 0 ? (inspections.filter(inspection => {
     const hive = hives.find(h => h.id === inspection.hiveId);
-    return hive && !hive.isDeleted;
+    return hive && !hive.isDeleted && hive.apiaryId === currentApiaryId;
   }).length / activeHiveCount).toFixed(1) : '0';
   
   const monthNames = [
@@ -100,8 +103,18 @@ export default function StatisticsScreen() {
     const years = new Set<number>();
     years.add(currentYear); // Always include current year
     yearlyStats.forEach(stat => years.add(stat.year));
-    inspections.forEach(inspection => years.add(new Date(inspection.date).getFullYear()));
-    yields.forEach(yieldItem => years.add(new Date(yieldItem.date).getFullYear()));
+    inspections.forEach(inspection => {
+      const hive = hives.find(h => h.id === inspection.hiveId);
+      if (hive && hive.apiaryId === currentApiaryId) {
+        years.add(new Date(inspection.date).getFullYear());
+      }
+    });
+    yields.forEach(yieldItem => {
+      const hive = hives.find(h => h.id === yieldItem.hiveId);
+      if (hive && hive.apiaryId === currentApiaryId) {
+        years.add(new Date(yieldItem.date).getFullYear());
+      }
+    });
     return Array.from(years).sort((a, b) => b - a);
   };
   
@@ -135,9 +148,11 @@ export default function StatisticsScreen() {
   );
 
   const getYieldByType = (year?: number) => {
-    const filteredYields = year 
-      ? yields.filter(yieldItem => new Date(yieldItem.date).getFullYear() === year)
-      : yields;
+    const filteredYields = yields.filter(yieldItem => {
+      const hive = hives.find(h => h.id === yieldItem.hiveId);
+      const yearMatch = year ? new Date(yieldItem.date).getFullYear() === year : true;
+      return yearMatch && hive && hive.apiaryId === currentApiaryId && !hive.isDeleted;
+    });
       
     const yieldByType = filteredYields.reduce((acc, yieldItem) => {
       const type = yieldItem.type;
@@ -152,9 +167,11 @@ export default function StatisticsScreen() {
   };
 
   const getYieldByTypeAndHive = (year?: number) => {
-    const filteredYields = year 
-      ? yields.filter(yieldItem => new Date(yieldItem.date).getFullYear() === year)
-      : yields;
+    const filteredYields = yields.filter(yieldItem => {
+      const hive = hives.find(h => h.id === yieldItem.hiveId);
+      const yearMatch = year ? new Date(yieldItem.date).getFullYear() === year : true;
+      return yearMatch && hive && hive.apiaryId === currentApiaryId;
+    });
       
     const yieldByHive = filteredYields.reduce((acc, yieldItem) => {
       const hive = hives.find(h => h.id === yieldItem.hiveId);
@@ -195,7 +212,8 @@ export default function StatisticsScreen() {
   const getInspectionsByYear = (year: number) => {
     return inspections.filter(inspection => {
       const inspectionYear = new Date(inspection.date).getFullYear();
-      return inspectionYear === year;
+      const hive = hives.find(h => h.id === inspection.hiveId);
+      return inspectionYear === year && hive && hive.apiaryId === currentApiaryId;
     }).length;
   };
   
@@ -274,7 +292,12 @@ export default function StatisticsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Štatistiky</Text>
+        <View>
+          <Text style={styles.title}>Štatistiky</Text>
+          {currentApiary && (
+            <Text style={styles.subtitle}>{currentApiary.name}</Text>
+          )}
+        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -469,7 +492,7 @@ export default function StatisticsScreen() {
           <Text style={styles.sectionTitle}>Typy rodín</Text>
           <View style={styles.hiveTypesList}>
             {Object.entries(
-              hives.filter(hive => !hive.isDeleted).reduce((acc, hive) => {
+              activeHives.reduce((acc, hive) => {
                 const type = hive.type;
                 if (!acc[type]) {
                   acc[type] = 0;
@@ -495,10 +518,13 @@ export default function StatisticsScreen() {
                 </View>
               );
             })}
-            {hives.filter(hive => !hive.isDeleted).length === 0 && (
+            {activeHives.length === 0 && (
               <View style={styles.emptyHiveTypes}>
                 <Text style={styles.emptyHiveTypesText}>
-                  Zatiaľ neboli pridané žiadne rodiny
+                  {currentApiary 
+                    ? `Zatiaľ neboli pridané žiadne rodiny do včelnice ${currentApiary.name}`
+                    : 'Zatiaľ neboli pridané žiadne rodiny'
+                  }
                 </Text>
               </View>
             )}
@@ -606,6 +632,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#111827',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 2,
   },
   content: {
     flex: 1,
