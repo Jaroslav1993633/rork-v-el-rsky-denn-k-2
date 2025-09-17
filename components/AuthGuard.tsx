@@ -10,15 +10,19 @@ interface AuthGuardProps {
 
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { isRegistered, getRemainingTrialDays, isLoading: beekeepingLoading } = useBeekeeping();
+  const beekeepingData = useBeekeeping();
   const router = useRouter();
   const segments = useSegments();
 
+  // Extract data with safe defaults
+  const isRegistered = beekeepingData?.isRegistered ?? false;
+  const beekeepingLoading = beekeepingData?.isLoading ?? true;
+
   useEffect(() => {
-    if (authLoading || beekeepingLoading) return;
+    if (authLoading || beekeepingLoading || !beekeepingData) return;
 
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
-    const remainingTrialDays = getRemainingTrialDays();
+    const remainingTrialDays = beekeepingData.getRemainingTrialDays();
     
     // If trial expired and not registered, force registration
     if (!isRegistered && remainingTrialDays !== null && remainingTrialDays <= 0) {
@@ -41,9 +45,9 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         router.replace('/(tabs)');
       }
     }
-  }, [isAuthenticated, authLoading, beekeepingLoading, isRegistered, getRemainingTrialDays, segments, router]);
+  }, [isAuthenticated, authLoading, beekeepingLoading, isRegistered, beekeepingData, segments, router]);
 
-  if (authLoading || beekeepingLoading) {
+  if (authLoading || beekeepingLoading || !beekeepingData) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#f39c12" />
