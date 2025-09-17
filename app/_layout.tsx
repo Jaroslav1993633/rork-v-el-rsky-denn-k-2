@@ -39,15 +39,15 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AuthGuard>
-          <BeekeepingProvider>
+      <BeekeepingProvider>
+        <AuthProvider>
+          <AuthGuard>
             <GestureHandlerRootView style={styles.container}>
               <RootLayoutNav />
             </GestureHandlerRootView>
-          </BeekeepingProvider>
-        </AuthGuard>
-      </AuthProvider>
+          </AuthGuard>
+        </AuthProvider>
+      </BeekeepingProvider>
     </QueryClientProvider>
   );
 }
