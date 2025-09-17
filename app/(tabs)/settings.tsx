@@ -14,13 +14,16 @@ import {
   User, 
   Shield, 
   Info,
-  ChevronRight 
+  ChevronRight,
+  LogOut 
 } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
+import { useAuth } from '@/hooks/auth-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const { isRegistered, getRemainingTrialDays, register } = useBeekeeping();
+  const { user, logout, isLoading } = useAuth();
   const insets = useSafeAreaInsets();
   const remainingDays = getRemainingTrialDays();
 
@@ -92,6 +95,25 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleLogout = async () => {
+    if (Platform.OS === 'web') {
+      const shouldLogout = confirm('Naozaj sa chcete odhlásiť?');
+      if (shouldLogout) {
+        try {
+          await logout();
+        } catch (error) {
+          alert('Chyba pri odhlasovaní');
+        }
+      }
+    } else {
+      try {
+        await logout();
+      } catch (error) {
+        console.error('Chyba pri odhlasovaní:', error);
+      }
+    }
+  };
+
   const SettingItem = ({ 
     title, 
     subtitle, 
@@ -151,12 +173,20 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>Účet</Text>
           <View style={styles.settingsList}>
             <SettingItem
-              title={isRegistered ? "Registrovaný používateľ" : "Skúšobná verzia"}
-              subtitle={isRegistered ? "Máte plný prístup k aplikácii" : "Obmedzenú dobu"}
+              title={user ? user.name : (isRegistered ? "Registrovaný používateľ" : "Skúšobná verzia")}
+              subtitle={user ? user.email : (isRegistered ? "Máte plný prístup k aplikácii" : "Obmedzenú dobu")}
               onPress={() => {}}
               icon={User}
               showChevron={false}
             />
+            {user && (
+              <SettingItem
+                title="Odhlásiť sa"
+                subtitle="Odhlásiť sa z účtu"
+                onPress={handleLogout}
+                icon={LogOut}
+              />
+            )}
           </View>
         </View>
 

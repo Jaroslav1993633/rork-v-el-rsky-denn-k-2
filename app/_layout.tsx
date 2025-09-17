@@ -5,6 +5,8 @@ import React, { useEffect } from "react";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BeekeepingProvider } from "@/hooks/beekeeping-store";
+import { AuthProvider } from "@/hooks/auth-store";
+import AuthGuard from "@/components/AuthGuard";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -18,6 +20,8 @@ function RootLayoutNav() {
       <Stack.Screen name="quick-inspection" options={{ presentation: "modal", headerShown: false }} />
       <Stack.Screen name="add-harvest" options={{ presentation: "modal", headerShown: false }} />
       <Stack.Screen name="hive/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="register" options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -35,11 +39,15 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BeekeepingProvider>
-        <GestureHandlerRootView style={styles.container}>
-          <RootLayoutNav />
-        </GestureHandlerRootView>
-      </BeekeepingProvider>
+      <AuthProvider>
+        <AuthGuard>
+          <BeekeepingProvider>
+            <GestureHandlerRootView style={styles.container}>
+              <RootLayoutNav />
+            </GestureHandlerRootView>
+          </BeekeepingProvider>
+        </AuthGuard>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
