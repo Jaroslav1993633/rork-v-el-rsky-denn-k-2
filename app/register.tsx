@@ -14,11 +14,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Eye, EyeOff, Mail, User, Lock } from 'lucide-react-native';
 import { useAuth } from '@/hooks/auth-store';
+import { useBeekeeping } from '@/hooks/beekeeping-store';
 import type { RegisterCredentials, ApiError } from '@/types/auth';
 
 export default function RegisterScreen() {
   const router = useRouter();
   const { register, isLoading } = useAuth();
+  const { register: registerBeekeeping, getRemainingTrialDays } = useBeekeeping();
+  
+  const remainingDays = getRemainingTrialDays();
   
   const [formData, setFormData] = useState<RegisterCredentials>({
     name: '',
@@ -64,7 +68,12 @@ export default function RegisterScreen() {
     if (!validateForm()) return;
 
     try {
+      // Register in auth system
       await register(formData);
+      
+      // Mark as registered in beekeeping system (end trial)
+      registerBeekeeping();
+      
       router.replace('/(tabs)');
     } catch (error) {
       const apiError = error as ApiError;
@@ -92,7 +101,25 @@ export default function RegisterScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <Text style={styles.title}>Registrácia</Text>
-            <Text style={styles.subtitle}>Vytvorte si nový účet</Text>
+            <Text style={styles.subtitle}>
+              {remainingDays !== null && remainingDays <= 0 
+                ? 'Skúšobná doba vypršala. Zaregistrujte sa pre pokračovanie.'
+                : 'Vytvorte si nový účet pre plný prístup'
+              }
+            </Text>
+            {remainingDays !== null && remainingDays > 0 && (
+              <View style={styles.trialInfo}>
+                <Text style={styles.trialText}>
+                  Zostáva {remainingDays} {remainingDays === 1 ? 'deň' : remainingDays < 5 ? 'dni' : 'dní'} skúšobnej doby
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.back()}
+                  style={styles.backButton}
+                >
+                  <Text style={styles.backButtonText}>Pokračovať v skúške</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           <View style={styles.form}>
@@ -310,6 +337,32 @@ const styles = StyleSheet.create({
   loginLink: {
     fontSize: 16,
     color: '#f39c12',
+    fontWeight: '600' as const,
+  },
+  trialInfo: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#fef3c7',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fbbf24',
+    alignItems: 'center',
+  },
+  trialText: {
+    fontSize: 14,
+    color: '#92400e',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  backButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#f59e0b',
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
     fontWeight: '600' as const,
   },
 });

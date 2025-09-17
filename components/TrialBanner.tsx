@@ -21,7 +21,7 @@ export default function TrialBanner() {
         <TouchableOpacity 
           style={styles.registerButton}
           onPress={() => {
-            router.push('/settings');
+            router.push('/register');
           }}
         >
           <Text style={styles.registerButtonText}>Registrácia</Text>

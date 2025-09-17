@@ -2,31 +2,48 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useAuth } from '@/hooks/auth-store';
+import { useBeekeeping } from '@/hooks/beekeeping-store';
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isRegistered, getRemainingTrialDays, isLoading: beekeepingLoading } = useBeekeeping();
   const router = useRouter();
   const segments = useSegments();
 
   useEffect(() => {
-    if (isLoading) return;
+    if (authLoading || beekeepingLoading) return;
 
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
-
-    if (!isAuthenticated && !inAuthGroup) {
-      // User is not authenticated and not on auth screens, redirect to login
-      router.replace('/login');
-    } else if (isAuthenticated && inAuthGroup) {
-      // User is authenticated but on auth screens, redirect to main app
-      router.replace('/(tabs)');
+    const remainingTrialDays = getRemainingTrialDays();
+    
+    // If trial expired and not registered, force registration
+    if (!isRegistered && remainingTrialDays !== null && remainingTrialDays <= 0) {
+      if (!inAuthGroup) {
+        router.replace('/register');
+      }
+      return;
     }
-  }, [isAuthenticated, isLoading, segments, router]);
+    
+    // Normal auth flow for registered users
+    if (isRegistered) {
+      if (!isAuthenticated && !inAuthGroup) {
+        router.replace('/login');
+      } else if (isAuthenticated && inAuthGroup) {
+        router.replace('/(tabs)');
+      }
+    } else {
+      // Trial user - allow access to main app, block auth screens
+      if (inAuthGroup) {
+        router.replace('/(tabs)');
+      }
+    }
+  }, [isAuthenticated, authLoading, beekeepingLoading, isRegistered, getRemainingTrialDays, segments, router]);
 
-  if (isLoading) {
+  if (authLoading || beekeepingLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#f39c12" />

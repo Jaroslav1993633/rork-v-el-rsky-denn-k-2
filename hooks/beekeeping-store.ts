@@ -5,7 +5,7 @@ import type { AppState, Hive, Inspection, Task, Yield, MonthlyStats, YearlyStats
 import { sampleHives, sampleInspections, sampleTasks, sampleYields } from '@/mocks/sample-data';
 
 const STORAGE_KEY = 'beekeeping_data';
-const TRIAL_DURATION = 10; // days
+const TRIAL_DURATION = 14; // days
 
 const initialState: AppState = {
   hives: [],
