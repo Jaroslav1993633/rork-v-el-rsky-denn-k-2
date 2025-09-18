@@ -23,6 +23,7 @@ const initialState: AppState = {
 export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   const [state, setState] = useState<AppState>(initialState);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   console.log('BeekeepingProvider initializing...', {
     initialState: {
@@ -31,6 +32,12 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
       apiariesCount: initialState.apiaries.length
     }
   });
+  
+  // Ensure state is never undefined
+  if (!state) {
+    console.warn('BeekeepingProvider state is undefined, using initialState');
+    setState(initialState);
+  }
 
   const saveData = useCallback(async (data: AppState) => {
     try {

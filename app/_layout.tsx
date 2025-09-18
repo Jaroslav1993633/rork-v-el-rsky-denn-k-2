@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, Component, ErrorInfo, ReactNode } from "react";
-import { StyleSheet, View, Text } from "react-native";
+import React, { useEffect, Component, ErrorInfo, ReactNode, useState } from "react";
+import { StyleSheet, View, Text, ActivityIndicator } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BeekeepingProvider } from "@/hooks/beekeeping-store";
 import { AuthProvider } from "@/hooks/auth-store";
@@ -65,6 +65,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -88,9 +99,45 @@ const styles = StyleSheet.create({
 });
 
 export default function RootLayout() {
+  const [isReady, setIsReady] = useState(false);
+
   useEffect(() => {
-    SplashScreen.hideAsync();
+    let timeoutId: NodeJS.Timeout;
+    
+    const initializeApp = async () => {
+      try {
+        // Add a longer delay to ensure React and Expo Router are fully initialized
+        timeoutId = setTimeout(async () => {
+          try {
+            await SplashScreen.hideAsync();
+          } catch (splashError) {
+            console.warn('Error hiding splash screen:', splashError);
+          }
+          setIsReady(true);
+        }, 500);
+      } catch (error) {
+        console.error('Error initializing app:', error);
+        setIsReady(true);
+      }
+    };
+
+    initializeApp();
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, []);
+
+  if (!isReady) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#f39c12" />
+        <Text style={styles.loadingText}>Načítavam...</Text>
+      </View>
+    );
+  }
 
   return (
     <ErrorBoundary>
