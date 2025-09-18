@@ -584,7 +584,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     }));
   }, [updateState]);
 
-  return useMemo(() => ({
+  const contextValue = useMemo(() => ({
     ...state,
     isLoading,
     
@@ -669,4 +669,13 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     getCurrentApiary,
     getCurrentApiaryHives,
   ]);
+  
+  console.log('BeekeepingProvider context value:', {
+    isLoading,
+    isRegistered: state.isRegistered,
+    hivesCount: state.hives?.length || 0,
+    apiariesCount: state.apiaries?.length || 0
+  });
+  
+  return contextValue;
 });
