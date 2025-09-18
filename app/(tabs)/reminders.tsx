@@ -25,6 +25,7 @@ export default function RemindersScreen() {
   const [newTaskDate, setNewTaskDate] = useState('');
   const [selectedHiveIds, setSelectedHiveIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [quickSelectInput, setQuickSelectInput] = useState<string>('');
 
   const getHiveName = (hiveId: string) => {
     const hive = hives.find(h => h.id === hiveId);
@@ -135,6 +136,8 @@ export default function RemindersScreen() {
     setSelectedHiveIds([]);
     setEditingTask(null);
     setShowAddModal(false);
+    setSearchQuery('');
+    setQuickSelectInput('');
   };
 
   const handleEditTask = (task: Task) => {
@@ -268,6 +271,29 @@ export default function RemindersScreen() {
     );
   }, [hives, searchQuery]);
 
+  const handleQuickSelectHive = () => {
+    if (!quickSelectInput.trim()) return;
+    
+    const input = quickSelectInput.trim();
+    const activeHives = hives.filter(hive => !hive.isDeleted);
+    // Try to find hive by exact name match or ID
+    const hive = activeHives.find(h => 
+      h.name.toLowerCase() === input.toLowerCase() ||
+      h.id.toLowerCase() === input.toLowerCase() ||
+      h.name.toLowerCase().includes(input.toLowerCase())
+    );
+    
+    if (hive) {
+      if (!selectedHiveIds.includes(hive.id)) {
+        setSelectedHiveIds(prev => [...prev, hive.id]);
+      }
+      setQuickSelectInput('');
+      Alert.alert('✅ Úspech', `Úľ "${hive.name}" bol pridaný do výberu`);
+    } else {
+      Alert.alert('❌ Nenájdené', `Úľ "${input}" sa nenašiel. Skontrolujte názov alebo číslo úľa.`);
+    }
+  };
+
   const pendingTasks = tasks.filter(task => !task.completed);
   const completedTasks = tasks.filter(task => task.completed);
 
@@ -371,6 +397,31 @@ export default function RemindersScreen() {
                 )}
               </View>
               
+              <View style={styles.quickSelectContainer}>
+                <Text style={styles.quickSelectLabel}>Rýchly výber úľa:</Text>
+                <View style={styles.quickSelectRow}>
+                  <TextInput
+                    style={styles.quickSelectInput}
+                    value={quickSelectInput}
+                    onChangeText={setQuickSelectInput}
+                    placeholder="Napíšte číslo alebo názov úľa..."
+                    placeholderTextColor="#9ca3af"
+                    onSubmitEditing={handleQuickSelectHive}
+                    returnKeyType="done"
+                  />
+                  <TouchableOpacity 
+                    style={styles.quickSelectButton}
+                    onPress={handleQuickSelectHive}
+                    disabled={!quickSelectInput.trim()}
+                  >
+                    <Text style={[
+                      styles.quickSelectButtonText,
+                      !quickSelectInput.trim() && styles.quickSelectButtonTextDisabled
+                    ]}>Pridať</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
               {hives.filter(hive => !hive.isDeleted).length > 5 && (
                 <View style={styles.searchInputContainer}>
                   <Search color="#9ca3af" size={20} />
@@ -378,7 +429,7 @@ export default function RemindersScreen() {
                     style={styles.searchInput}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
-                    placeholder="Hľadať úle podľa čísla alebo názvu..."
+                    placeholder="Alebo hľadať v zozname..."
                     placeholderTextColor="#9ca3af"
                   />
                   {searchQuery.length > 0 && (
@@ -807,5 +858,49 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontSize: 14,
     fontWeight: '500',
+  },
+  quickSelectContainer: {
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  quickSelectLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#166534',
+    marginBottom: 8,
+  },
+  quickSelectRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  quickSelectInput: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#22c55e',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    color: '#111827',
+  },
+  quickSelectButton: {
+    backgroundColor: '#22c55e',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  quickSelectButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  quickSelectButtonTextDisabled: {
+    opacity: 0.5,
   },
 });

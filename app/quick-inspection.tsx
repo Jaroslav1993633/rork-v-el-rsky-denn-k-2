@@ -57,6 +57,7 @@ export default function QuickInspectionScreen() {
   const [showSuccessMessage, setShowSuccessMessage] = useState<boolean>(false);
   const [successOpacity] = useState(new Animated.Value(0));
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [quickSelectInput, setQuickSelectInput] = useState<string>('');
 
   const currentConfig = ACTION_CONFIGS[actionType];
 
@@ -72,6 +73,28 @@ export default function QuickInspectionScreen() {
       hive.id.toLowerCase().includes(query)
     );
   }, [hives, searchQuery]);
+
+  const handleQuickSelect = () => {
+    if (!quickSelectInput.trim()) return;
+    
+    const input = quickSelectInput.trim();
+    // Try to find hive by exact name match or ID
+    const hive = hives.find(h => 
+      h.name.toLowerCase() === input.toLowerCase() ||
+      h.id.toLowerCase() === input.toLowerCase() ||
+      h.name.toLowerCase().includes(input.toLowerCase())
+    );
+    
+    if (hive) {
+      if (!selectedHiveIds.includes(hive.id)) {
+        setSelectedHiveIds(prev => [...prev, hive.id]);
+      }
+      setQuickSelectInput('');
+      Alert.alert('✅ Úspech', `Úľ "${hive.name}" bol pridaný do výberu`);
+    } else {
+      Alert.alert('❌ Nenájdené', `Úľ "${input}" sa nenašiel. Skontrolujte názov alebo číslo úľa.`);
+    }
+  };
 
   const handleHiveToggle = (hiveId: string) => {
     setSelectedHiveIds(prev => {
@@ -288,6 +311,31 @@ export default function QuickInspectionScreen() {
             )}
           </View>
           
+          <View style={styles.quickSelectContainer}>
+            <Text style={styles.quickSelectLabel}>Rýchly výber úľa:</Text>
+            <View style={styles.quickSelectRow}>
+              <TextInput
+                style={styles.quickSelectInput}
+                value={quickSelectInput}
+                onChangeText={setQuickSelectInput}
+                placeholder="Napíšte číslo alebo názov úľa..."
+                placeholderTextColor="#9ca3af"
+                onSubmitEditing={handleQuickSelect}
+                returnKeyType="done"
+              />
+              <TouchableOpacity 
+                style={styles.quickSelectButton}
+                onPress={handleQuickSelect}
+                disabled={!quickSelectInput.trim()}
+              >
+                <Text style={[
+                  styles.quickSelectButtonText,
+                  !quickSelectInput.trim() && styles.quickSelectButtonTextDisabled
+                ]}>Pridať</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          
           {hives.length > 5 && (
             <View style={styles.searchInputContainer}>
               <Search color="#9ca3af" size={20} />
@@ -295,7 +343,7 @@ export default function QuickInspectionScreen() {
                 style={styles.searchInput}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                placeholder="Hľadať úle podľa čísla alebo názvu..."
+                placeholder="Alebo hľadať v zozname..."
                 placeholderTextColor="#9ca3af"
               />
               {searchQuery.length > 0 && (
@@ -577,6 +625,50 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontSize: 14,
     fontWeight: '500',
+  },
+  quickSelectContainer: {
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  quickSelectLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#166534',
+    marginBottom: 8,
+  },
+  quickSelectRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  quickSelectInput: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#22c55e',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    color: '#111827',
+  },
+  quickSelectButton: {
+    backgroundColor: '#22c55e',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  quickSelectButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  quickSelectButtonTextDisabled: {
+    opacity: 0.5,
   },
   toggleSwitch: {
     width: 44,
