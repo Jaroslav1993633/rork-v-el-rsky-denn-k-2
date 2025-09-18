@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useAuth } from '@/hooks/auth-store';
@@ -11,6 +11,7 @@ interface AuthGuardProps {
 export default function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter();
   const segments = useSegments();
+  const [isRouterReady, setIsRouterReady] = useState(false);
   
   // Always call hooks - React requires this
   const authData = useAuth();
@@ -26,8 +27,16 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const isDataReady = authData !== undefined && authData !== null && 
                       beekeepingData !== undefined && beekeepingData !== null;
 
+  // Initialize router readiness
   useEffect(() => {
-    if (authLoading || beekeepingLoading || !isDataReady) return;
+    const timer = setTimeout(() => {
+      setIsRouterReady(true);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isRouterReady || authLoading || beekeepingLoading || !isDataReady) return;
 
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
     const remainingTrialDays = beekeepingData?.getRemainingTrialDays?.() ?? null;
@@ -53,9 +62,9 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         router.replace('/(tabs)');
       }
     }
-  }, [isAuthenticated, authLoading, beekeepingLoading, isRegistered, beekeepingData, segments, router, isDataReady]);
+  }, [isRouterReady, isAuthenticated, authLoading, beekeepingLoading, isRegistered, beekeepingData, segments, router, isDataReady]);
 
-  if (authLoading || beekeepingLoading || !isDataReady) {
+  if (!isRouterReady || authLoading || beekeepingLoading || !isDataReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#f39c12" />

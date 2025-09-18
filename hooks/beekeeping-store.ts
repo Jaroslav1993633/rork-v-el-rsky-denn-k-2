@@ -24,7 +24,13 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   const [state, setState] = useState<AppState>(initialState);
   const [isLoading, setIsLoading] = useState(true);
   
-  console.log('BeekeepingProvider initializing...');
+  console.log('BeekeepingProvider initializing...', {
+    initialState: {
+      isRegistered: initialState.isRegistered,
+      hivesCount: initialState.hives.length,
+      apiariesCount: initialState.apiaries.length
+    }
+  });
 
   const saveData = useCallback(async (data: AppState) => {
     try {

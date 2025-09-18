@@ -47,15 +47,17 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerBackTitle: "Späť" }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-      <Stack.Screen name="quick-inspection" options={{ presentation: "modal", headerShown: false }} />
-      <Stack.Screen name="add-harvest" options={{ presentation: "modal", headerShown: false }} />
-      <Stack.Screen name="hive/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="register" options={{ headerShown: false }} />
-    </Stack>
+    <AuthGuard>
+      <Stack screenOptions={{ headerBackTitle: "Späť" }}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+        <Stack.Screen name="quick-inspection" options={{ presentation: "modal", headerShown: false }} />
+        <Stack.Screen name="add-harvest" options={{ presentation: "modal", headerShown: false }} />
+        <Stack.Screen name="hive/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="register" options={{ headerShown: false }} />
+      </Stack>
+    </AuthGuard>
   );
 }
 
@@ -96,9 +98,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <BeekeepingProvider>
             <AuthProvider>
-              <AuthGuard>
-                <RootLayoutNav />
-              </AuthGuard>
+              <RootLayoutNav />
             </AuthProvider>
           </BeekeepingProvider>
         </QueryClientProvider>
