@@ -1,7 +1,7 @@
 {
   "build": {
     "production": {
-      "node": "lts/iron",
+      "node": "20.x",
       "android": {
         "buildType": "apk"
       }
