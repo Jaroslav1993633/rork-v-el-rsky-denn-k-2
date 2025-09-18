@@ -23,6 +23,8 @@ const initialState: AppState = {
 export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   const [state, setState] = useState<AppState>(initialState);
   const [isLoading, setIsLoading] = useState(true);
+  
+  console.log('BeekeepingProvider initializing...');
 
   const saveData = useCallback(async (data: AppState) => {
     try {
@@ -102,7 +104,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   const updateState = useCallback((updates: Partial<AppState> | ((prevState: AppState) => Partial<AppState>)) => {
     setState(prevState => {
@@ -674,7 +676,8 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     isLoading,
     isRegistered: state.isRegistered,
     hivesCount: state.hives?.length || 0,
-    apiariesCount: state.apiaries?.length || 0
+    apiariesCount: state.apiaries?.length || 0,
+    contextValueKeys: Object.keys(contextValue)
   });
   
   return contextValue;

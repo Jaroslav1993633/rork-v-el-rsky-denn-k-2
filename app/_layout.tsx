@@ -8,15 +8,6 @@ import { BeekeepingProvider } from "@/hooks/beekeeping-store";
 import { AuthProvider } from "@/hooks/auth-store";
 import AuthGuard from "@/components/AuthGuard";
 
-// Simple polyfill for React 'use' hook if not available
-if (!(React as any).use) {
-  (React as any).use = function(value: any) {
-    // For contexts, just return null to avoid crashes
-    // This is a minimal polyfill to prevent the error
-    return null;
-  };
-}
-
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
@@ -101,17 +92,17 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <BeekeepingProvider>
-          <AuthProvider>
-            <AuthGuard>
-              <GestureHandlerRootView style={styles.container}>
+      <GestureHandlerRootView style={styles.container}>
+        <QueryClientProvider client={queryClient}>
+          <BeekeepingProvider>
+            <AuthProvider>
+              <AuthGuard>
                 <RootLayoutNav />
-              </GestureHandlerRootView>
-            </AuthGuard>
-          </AuthProvider>
-        </BeekeepingProvider>
-      </QueryClientProvider>
+              </AuthGuard>
+            </AuthProvider>
+          </BeekeepingProvider>
+        </QueryClientProvider>
+      </GestureHandlerRootView>
     </ErrorBoundary>
   );
 }

@@ -9,25 +9,28 @@ interface AuthGuardProps {
 }
 
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   
-  // Always call the hook, but handle potential undefined return
+  // Always call hooks - React requires this
+  const authData = useAuth();
   const beekeepingData = useBeekeeping();
   
   // Safely extract data with defaults
+  const isAuthenticated = authData?.isAuthenticated ?? false;
+  const authLoading = authData?.isLoading ?? true;
   const isRegistered = beekeepingData?.isRegistered ?? false;
   const beekeepingLoading = beekeepingData?.isLoading ?? true;
   
-  // Check if beekeeping data is available
-  const isBeekeepingDataReady = beekeepingData !== undefined && beekeepingData !== null;
+  // Check if data is available
+  const isDataReady = authData !== undefined && authData !== null && 
+                      beekeepingData !== undefined && beekeepingData !== null;
 
   useEffect(() => {
-    if (authLoading || beekeepingLoading || !isBeekeepingDataReady) return;
+    if (authLoading || beekeepingLoading || !isDataReady) return;
 
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'register';
-    const remainingTrialDays = beekeepingData.getRemainingTrialDays();
+    const remainingTrialDays = beekeepingData?.getRemainingTrialDays?.() ?? null;
     
     // If trial expired and not registered, force registration
     if (!isRegistered && remainingTrialDays !== null && remainingTrialDays <= 0) {
@@ -50,9 +53,9 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         router.replace('/(tabs)');
       }
     }
-  }, [isAuthenticated, authLoading, beekeepingLoading, isRegistered, beekeepingData, segments, router, isBeekeepingDataReady]);
+  }, [isAuthenticated, authLoading, beekeepingLoading, isRegistered, beekeepingData, segments, router, isDataReady]);
 
-  if (authLoading || beekeepingLoading || !isBeekeepingDataReady) {
+  if (authLoading || beekeepingLoading || !isDataReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#f39c12" />
