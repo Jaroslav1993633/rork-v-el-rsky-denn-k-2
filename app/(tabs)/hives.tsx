@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Plus, Hexagon, ChevronRight } from 'lucide-react-native';
+import { Plus, Hexagon, ChevronRight, Search, X } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Hive } from '@/types/beekeeping';
@@ -33,12 +34,24 @@ const queenStatusLabels = {
 export default function HivesScreen() {
   const { hives, apiaries, getCurrentApiary, getCurrentApiaryHives } = useBeekeeping();
   const insets = useSafeAreaInsets();
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showSearch, setShowSearch] = useState<boolean>(false);
   
   const currentApiary = getCurrentApiary();
   const currentApiaryHives = getCurrentApiaryHives();
 
-  // Filter out deleted hives from current apiary
-  const activeHives = currentApiaryHives;
+  // Filter hives based on search query
+  const activeHives = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return currentApiaryHives;
+    }
+    
+    const query = searchQuery.toLowerCase().trim();
+    return currentApiaryHives.filter(hive => 
+      hive.name.toLowerCase().includes(query) ||
+      hive.id.toLowerCase().includes(query)
+    );
+  }, [currentApiaryHives, searchQuery]);
   
   // Create a map of apiary names for efficient lookup
   const apiaryNamesMap = React.useMemo(() => {
@@ -138,22 +151,67 @@ export default function HivesScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerLeft}>
           <Text style={styles.title}>Moje úle</Text>
           {currentApiary && (
             <Text style={styles.subtitle}>{currentApiary.name}</Text>
           )}
         </View>
-        <TouchableOpacity 
-          style={styles.headerButton}
-          onPress={() => router.push('/modal')}
-        >
-          <Plus color="#22c55e" size={24} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity 
+            style={styles.headerButton}
+            onPress={() => setShowSearch(!showSearch)}
+          >
+            <Search color="#6b7280" size={24} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.headerButton}
+            onPress={() => router.push('/modal')}
+          >
+            <Plus color="#22c55e" size={24} />
+          </TouchableOpacity>
+        </View>
       </View>
 
+      {showSearch && (
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Search color="#9ca3af" size={20} />
+            <TextInput
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Hľadať úle podľa čísla alebo názvu..."
+              placeholderTextColor="#9ca3af"
+              autoFocus
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <X color="#9ca3af" size={20} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
       {activeHives.length === 0 ? (
-        <EmptyState />
+        searchQuery.trim() ? (
+          <View style={styles.emptyState}>
+            <Search color="#d1d5db" size={64} />
+            <Text style={styles.emptyTitle}>Žiadne výsledky</Text>
+            <Text style={styles.emptyDescription}>
+              Nenašli sa žiadne úle pre hľadaný výraz &quot;{searchQuery}&quot;
+            </Text>
+            <TouchableOpacity 
+              style={styles.clearSearchButton}
+              onPress={() => setSearchQuery('')}
+            >
+              <Text style={styles.clearSearchButtonText}>Vymazať vyhľadávanie</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <EmptyState />
+        )
       ) : (
         <FlatList
           data={activeHives}
@@ -179,6 +237,14 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   title: {
     fontSize: 24,
@@ -302,6 +368,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     marginTop: 2,
+  },
+  searchContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+    paddingVertical: 4,
+  },
+  clearSearchButton: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginTop: 16,
+  },
+  clearSearchButtonText: {
+    color: '#6b7280',
+    fontSize: 14,
+    fontWeight: '500',
   },
 
 });

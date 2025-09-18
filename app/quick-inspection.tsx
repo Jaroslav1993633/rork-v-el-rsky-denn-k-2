@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Animated,
 } from 'react-native';
 import { router } from 'expo-router';
-import { X, Check, Droplets, Bug, Heart } from 'lucide-react-native';
+import { X, Check, Droplets, Bug, Heart, Search } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -56,8 +56,22 @@ export default function QuickInspectionScreen() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState<boolean>(false);
   const [successOpacity] = useState(new Animated.Value(0));
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const currentConfig = ACTION_CONFIGS[actionType];
+
+  // Filter hives based on search query
+  const filteredHives = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return hives;
+    }
+    
+    const query = searchQuery.toLowerCase().trim();
+    return hives.filter(hive => 
+      hive.name.toLowerCase().includes(query) ||
+      hive.id.toLowerCase().includes(query)
+    );
+  }, [hives, searchQuery]);
 
   const handleHiveToggle = (hiveId: string) => {
     setSelectedHiveIds(prev => {
@@ -71,7 +85,7 @@ export default function QuickInspectionScreen() {
   const handleSelectAll = (value: boolean) => {
     setSelectAll(value);
     if (value) {
-      setSelectedHiveIds(hives.map(h => h.id));
+      setSelectedHiveIds(filteredHives.map(h => h.id));
     } else {
       setSelectedHiveIds([]);
     }
@@ -109,7 +123,7 @@ export default function QuickInspectionScreen() {
       console.log('All inspections added successfully');
       
       const selectedHiveCount = selectedHiveIds.length;
-      const hiveNames = hives
+      const hiveNames = filteredHives
         .filter(h => selectedHiveIds.includes(h.id))
         .map(h => h.name)
         .join(', ');
@@ -255,7 +269,7 @@ export default function QuickInspectionScreen() {
               Vyberte úle
               {selectedHiveIds.length > 0 && ` (${selectedHiveIds.length})`}
             </Text>
-            {hives.length > 1 && (
+            {filteredHives.length > 1 && (
               <View style={styles.selectAllContainer}>
                 <Text style={styles.selectAllLabel}>Vybrať všetky</Text>
                 <TouchableOpacity
@@ -274,18 +288,47 @@ export default function QuickInspectionScreen() {
             )}
           </View>
           
-          {hives.length === 0 ? (
+          {hives.length > 5 && (
+            <View style={styles.searchInputContainer}>
+              <Search color="#9ca3af" size={20} />
+              <TextInput
+                style={styles.searchInput}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Hľadať úle podľa čísla alebo názvu..."
+                placeholderTextColor="#9ca3af"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <X color="#9ca3af" size={20} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          
+          {filteredHives.length === 0 ? (
             <View style={styles.noHivesContainer}>
               <Text style={styles.noHivesText}>
-                {currentApiary 
-                  ? `Žiadne úle v včelnici ${currentApiary.name}`
-                  : 'Žiadne úle k dispozícii'
-                }
+                {searchQuery.trim() ? (
+                  `Žiadne úle pre hľadaný výraz "${searchQuery}"`
+                ) : currentApiary ? (
+                  `Žiadne úle v včelnici ${currentApiary.name}`
+                ) : (
+                  'Žiadne úle k dispozícii'
+                )}
               </Text>
+              {searchQuery.trim() && (
+                <TouchableOpacity 
+                  style={styles.clearSearchButton}
+                  onPress={() => setSearchQuery('')}
+                >
+                  <Text style={styles.clearSearchButtonText}>Vymazať vyhľadávanie</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <View style={styles.hivesCompactGrid}>
-              {hives.map((hive) => {
+              {filteredHives.map((hive) => {
                 const isSelected = selectedHiveIds.includes(hive.id);
                 return (
                   <TouchableOpacity
@@ -504,6 +547,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
     textAlign: 'center',
+    marginBottom: 16,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    gap: 8,
+    marginBottom: 16,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+    paddingVertical: 4,
+  },
+  clearSearchButton: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  clearSearchButtonText: {
+    color: '#6b7280',
+    fontSize: 14,
+    fontWeight: '500',
   },
   toggleSwitch: {
     width: 44,

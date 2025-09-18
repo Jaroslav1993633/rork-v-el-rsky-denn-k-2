@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import { Plus, Bell, Calendar, CheckCircle, Circle, X, Trash2, Edit3 } from 'lucide-react-native';
+import { Plus, Bell, Calendar, CheckCircle, Circle, X, Trash2, Edit3, Search } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,7 @@ export default function RemindersScreen() {
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskDate, setNewTaskDate] = useState('');
   const [selectedHiveIds, setSelectedHiveIds] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const getHiveName = (hiveId: string) => {
     const hive = hives.find(h => h.id === hiveId);
@@ -253,6 +254,20 @@ export default function RemindersScreen() {
     </View>
   );
 
+  // Filter hives for the modal
+  const filteredHives = useMemo(() => {
+    const activeHives = hives.filter(hive => !hive.isDeleted);
+    if (!searchQuery.trim()) {
+      return activeHives;
+    }
+    
+    const query = searchQuery.toLowerCase().trim();
+    return activeHives.filter(hive => 
+      hive.name.toLowerCase().includes(query) ||
+      hive.id.toLowerCase().includes(query)
+    );
+  }, [hives, searchQuery]);
+
   const pendingTasks = tasks.filter(task => !task.completed);
   const completedTasks = tasks.filter(task => task.completed);
 
@@ -334,59 +349,98 @@ export default function RemindersScreen() {
             <View style={styles.inputGroup}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.inputLabel}>Vyberte úle</Text>
-                {hives.filter(hive => !hive.isDeleted).length > 1 && (
+                {filteredHives.length > 1 && (
                   <View style={styles.selectAllContainer}>
                     <Text style={styles.selectAllLabel}>Označiť všetky</Text>
                     <TouchableOpacity
                       style={[
                         styles.toggleSwitch,
-                        selectedHiveIds.length === hives.filter(hive => !hive.isDeleted).length && styles.toggleSwitchActive
+                        selectedHiveIds.length === filteredHives.length && styles.toggleSwitchActive
                       ]}
                       onPress={() => {
-                        const allHiveIds = hives.filter(hive => !hive.isDeleted).map(h => h.id);
+                        const allHiveIds = filteredHives.map(h => h.id);
                         setSelectedHiveIds(selectedHiveIds.length === allHiveIds.length ? [] : allHiveIds);
                       }}
                     >
                       <View style={[
                         styles.toggleThumb,
-                        selectedHiveIds.length === hives.filter(hive => !hive.isDeleted).length && styles.toggleThumbActive
+                        selectedHiveIds.length === filteredHives.length && styles.toggleThumbActive
                       ]} />
                     </TouchableOpacity>
                   </View>
                 )}
               </View>
-              <View style={styles.pickerContainer}>
-                {hives.filter(hive => !hive.isDeleted).map((hive) => {
-                  const isSelected = selectedHiveIds.includes(hive.id);
-                  return (
-                    <TouchableOpacity
-                      key={hive.id}
-                      style={[
-                        styles.hiveOption,
-                        isSelected && styles.selectedHiveOption,
-                      ]}
-                      onPress={() => {
-                        if (isSelected) {
-                          setSelectedHiveIds(selectedHiveIds.filter(id => id !== hive.id));
-                        } else {
-                          setSelectedHiveIds([...selectedHiveIds, hive.id]);
-                        }
-                      }}
-                    >
-                      <View style={styles.hiveOptionContent}>
-                        <View style={styles.checkbox}>
-                          {isSelected && <CheckCircle color="#ffffff" size={16} />}
-                        </View>
-                        <Text style={[
-                          styles.hiveOptionText,
-                          isSelected && styles.selectedHiveOptionText,
-                        ]}>
-                          {hive.name}
-                        </Text>
-                      </View>
+              
+              {hives.filter(hive => !hive.isDeleted).length > 5 && (
+                <View style={styles.searchInputContainer}>
+                  <Search color="#9ca3af" size={20} />
+                  <TextInput
+                    style={styles.searchInput}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="Hľadať úle podľa čísla alebo názvu..."
+                    placeholderTextColor="#9ca3af"
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                      <X color="#9ca3af" size={20} />
                     </TouchableOpacity>
-                  );
-                })}
+                  )}
+                </View>
+              )}
+              
+              <View style={styles.pickerContainer}>
+                {filteredHives.length === 0 ? (
+                  <View style={styles.noHivesContainer}>
+                    <Text style={styles.noHivesText}>
+                      {searchQuery.trim() ? (
+                        `Žiadne úle pre hľadaný výraz "${searchQuery}"`
+                      ) : (
+                        'Žiadne úle k dispozícii'
+                      )}
+                    </Text>
+                    {searchQuery.trim() && (
+                      <TouchableOpacity 
+                        style={styles.clearSearchButton}
+                        onPress={() => setSearchQuery('')}
+                      >
+                        <Text style={styles.clearSearchButtonText}>Vymazať vyhľadávanie</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : (
+                  filteredHives.map((hive) => {
+                    const isSelected = selectedHiveIds.includes(hive.id);
+                    return (
+                      <TouchableOpacity
+                        key={hive.id}
+                        style={[
+                          styles.hiveOption,
+                          isSelected && styles.selectedHiveOption,
+                        ]}
+                        onPress={() => {
+                          if (isSelected) {
+                            setSelectedHiveIds(selectedHiveIds.filter(id => id !== hive.id));
+                          } else {
+                            setSelectedHiveIds([...selectedHiveIds, hive.id]);
+                          }
+                        }}
+                      >
+                        <View style={styles.hiveOptionContent}>
+                          <View style={styles.checkbox}>
+                            {isSelected && <CheckCircle color="#ffffff" size={16} />}
+                          </View>
+                          <Text style={[
+                            styles.hiveOptionText,
+                            isSelected && styles.selectedHiveOptionText,
+                          ]}>
+                            {hive.name}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
               </View>
             </View>
 
@@ -714,5 +768,44 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    gap: 8,
+    marginBottom: 16,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+    paddingVertical: 4,
+  },
+  noHivesContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noHivesText: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  clearSearchButton: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  clearSearchButtonText: {
+    color: '#6b7280',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
