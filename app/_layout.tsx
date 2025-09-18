@@ -46,18 +46,22 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 }
 
 function RootLayoutNav() {
+  console.log('RootLayoutNav: Rendering...');
+  
   return (
-    <AuthGuard>
-      <Stack screenOptions={{ headerBackTitle: "Späť" }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-        <Stack.Screen name="quick-inspection" options={{ presentation: "modal", headerShown: false }} />
-        <Stack.Screen name="add-harvest" options={{ presentation: "modal", headerShown: false }} />
-        <Stack.Screen name="hive/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="register" options={{ headerShown: false }} />
-      </Stack>
-    </AuthGuard>
+    <ErrorBoundary>
+      <AuthGuard>
+        <Stack screenOptions={{ headerBackTitle: "Späť" }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+          <Stack.Screen name="quick-inspection" options={{ presentation: "modal", headerShown: false }} />
+          <Stack.Screen name="add-harvest" options={{ presentation: "modal", headerShown: false }} />
+          <Stack.Screen name="hive/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="register" options={{ headerShown: false }} />
+        </Stack>
+      </AuthGuard>
+    </ErrorBoundary>
   );
 }
 
@@ -106,15 +110,18 @@ export default function RootLayout() {
     
     const initializeApp = async () => {
       try {
+        console.log('RootLayout: Starting app initialization...');
         // Add a longer delay to ensure React and Expo Router are fully initialized
         timeoutId = setTimeout(async () => {
           try {
             await SplashScreen.hideAsync();
+            console.log('RootLayout: Splash screen hidden');
           } catch (splashError) {
             console.warn('Error hiding splash screen:', splashError);
           }
           setIsReady(true);
-        }, 500);
+          console.log('RootLayout: App ready');
+        }, 1000); // Increased delay for better stability
       } catch (error) {
         console.error('Error initializing app:', error);
         setIsReady(true);
@@ -131,6 +138,7 @@ export default function RootLayout() {
   }, []);
 
   if (!isReady) {
+    console.log('RootLayout: App not ready, showing loading...');
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#f39c12" />
@@ -138,18 +146,18 @@ export default function RootLayout() {
       </View>
     );
   }
+  
+  console.log('RootLayout: Rendering main app...');
 
   return (
-    <ErrorBoundary>
-      <GestureHandlerRootView style={styles.container}>
-        <QueryClientProvider client={queryClient}>
-          <BeekeepingProvider>
-            <AuthProvider>
-              <RootLayoutNav />
-            </AuthProvider>
-          </BeekeepingProvider>
-        </QueryClientProvider>
-      </GestureHandlerRootView>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={styles.container}>
+      <QueryClientProvider client={queryClient}>
+        <BeekeepingProvider>
+          <AuthProvider>
+            <RootLayoutNav />
+          </AuthProvider>
+        </BeekeepingProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -26,7 +26,17 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   // Check if data is available
   const isDataReady = authData !== undefined && authData !== null && 
                       beekeepingData !== undefined && beekeepingData !== null;
-
+  
+  console.log('AuthGuard state:', {
+    isDataReady,
+    authData: authData ? 'available' : 'null',
+    beekeepingData: beekeepingData ? 'available' : 'null',
+    isAuthenticated,
+    authLoading,
+    isRegistered,
+    beekeepingLoading
+  });
+  
   // Initialize router readiness
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -64,7 +74,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     }
   }, [isRouterReady, isAuthenticated, authLoading, beekeepingLoading, isRegistered, beekeepingData, segments, router, isDataReady]);
 
-  if (!isRouterReady || authLoading || beekeepingLoading || !isDataReady) {
+  // If context is not available, show loading
+  if (!authData || !beekeepingData || !isRouterReady || authLoading || beekeepingLoading || !isDataReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#f39c12" />

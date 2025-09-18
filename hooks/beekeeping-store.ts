@@ -21,9 +21,11 @@ const initialState: AppState = {
 };
 
 export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
-  const [state, setState] = useState<AppState>(initialState);
+  const [state, setState] = useState<AppState>(() => {
+    console.log('BeekeepingProvider: Initializing state with:', initialState);
+    return initialState;
+  });
   const [isLoading, setIsLoading] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
   
   console.log('BeekeepingProvider initializing...', {
     initialState: {
@@ -33,9 +35,10 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     }
   });
   
-  // Ensure state is never undefined
+  // Ensure state is never undefined or null
+  const safeState = state || initialState;
   if (!state) {
-    console.warn('BeekeepingProvider state is undefined, using initialState');
+    console.warn('BeekeepingProvider state is undefined, resetting to initialState');
     setState(initialState);
   }
 
@@ -280,9 +283,9 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
 
   // Trial and registration
   const getRemainingTrialDays = useCallback(() => {
-    if (state.isRegistered || !state.trialStartDate) return null;
+    if (safeState.isRegistered || !safeState.trialStartDate) return null;
     
-    const startDate = new Date(state.trialStartDate);
+    const startDate = new Date(safeState.trialStartDate);
     const currentDate = new Date();
     const daysPassed = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const remainingDays = TRIAL_DURATION - daysPassed;
@@ -600,7 +603,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   }, [updateState]);
 
   const contextValue = useMemo(() => ({
-    ...state,
+    ...safeState,
     isLoading,
     
     // Hive methods
@@ -650,7 +653,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     getCurrentApiary,
     getCurrentApiaryHives,
   }), [
-    state,
+    safeState,
     isLoading,
     addHive,
     updateHive,
@@ -687,11 +690,11 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   
   console.log('BeekeepingProvider context value:', {
     isLoading,
-    isRegistered: state.isRegistered,
-    hivesCount: state.hives?.length || 0,
-    apiariesCount: state.apiaries?.length || 0,
+    isRegistered: safeState.isRegistered,
+    hivesCount: safeState.hives?.length || 0,
+    apiariesCount: safeState.apiaries?.length || 0,
     contextValueKeys: Object.keys(contextValue)
   });
   
   return contextValue;
-});
+}, initialState);
