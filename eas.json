@@ -1,18 +1,14 @@
 {
   "build": {
+    "production": {
+      "node": "lts/iron",
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "development": {
       "developmentClient": true,
       "distribution": "internal"
-    },
-    "preview": {
-      "distribution": "internal"
-    },
-    "production": {
-      "node": "20.x",
-      "yarn": "1.22.19"
     }
-  },
-  "submit": {
-    "production": {}
   }
 }
