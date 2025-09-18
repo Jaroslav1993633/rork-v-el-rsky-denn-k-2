@@ -12,10 +12,21 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter();
   const segments = useSegments();
   const [isRouterReady, setIsRouterReady] = useState(false);
+  const [hasContextError, setHasContextError] = useState(false);
   
   // Always call hooks - React requires this
   const authData = useAuth();
   const beekeepingData = useBeekeeping();
+  
+  // Check for context errors
+  useEffect(() => {
+    if (!authData || !beekeepingData) {
+      console.error('Context data is missing:', { authData: !!authData, beekeepingData: !!beekeepingData });
+      setHasContextError(true);
+    } else {
+      setHasContextError(false);
+    }
+  }, [authData, beekeepingData]);
   
   // Safely extract data with defaults - handle undefined contexts
   const isAuthenticated = authData?.isAuthenticated ?? false;
@@ -29,6 +40,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   
   console.log('AuthGuard state:', {
     isDataReady,
+    hasContextError,
     authData: authData ? 'available' : 'null',
     beekeepingData: beekeepingData ? 'available' : 'null',
     isAuthenticated,

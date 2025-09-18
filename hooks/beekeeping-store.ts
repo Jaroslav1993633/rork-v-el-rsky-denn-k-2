@@ -21,24 +21,21 @@ const initialState: AppState = {
 };
 
 export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
-  const [state, setState] = useState<AppState>(() => {
-    console.log('BeekeepingProvider: Initializing state with:', initialState);
-    return initialState;
-  });
+  const [state, setState] = useState<AppState>(initialState);
   const [isLoading, setIsLoading] = useState(true);
   
   console.log('BeekeepingProvider initializing...', {
-    initialState: {
-      isRegistered: initialState.isRegistered,
-      hivesCount: initialState.hives.length,
-      apiariesCount: initialState.apiaries.length
+    state: {
+      isRegistered: state.isRegistered,
+      hivesCount: state.hives?.length || 0,
+      apiariesCount: state.apiaries?.length || 0
     }
   });
   
   // Ensure state is never undefined or null
   const safeState = state || initialState;
-  if (!state) {
-    console.warn('BeekeepingProvider state is undefined, resetting to initialState');
+  if (!state || typeof state !== 'object') {
+    console.warn('BeekeepingProvider state is invalid, resetting to initialState');
     setState(initialState);
   }
 
@@ -291,7 +288,7 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
     const remainingDays = TRIAL_DURATION - daysPassed;
     
     return Math.max(0, remainingDays);
-  }, [state.isRegistered, state.trialStartDate]);
+  }, [safeState.isRegistered, safeState.trialStartDate]);
 
   const register = useCallback(() => {
     updateState({ isRegistered: true });

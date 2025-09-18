@@ -1,4 +1,4 @@
-// Import polyfill first to ensure React.use is available
+// Import polyfill FIRST to ensure React.use is available before any other imports
 import '@/utils/react-polyfill';
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
