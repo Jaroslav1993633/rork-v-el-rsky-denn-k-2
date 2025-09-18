@@ -697,4 +697,4 @@ export const [BeekeepingProvider, useBeekeeping] = createContextHook(() => {
   });
   
   return contextValue;
-}, initialState);
+});

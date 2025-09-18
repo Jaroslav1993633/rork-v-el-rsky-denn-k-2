@@ -330,4 +330,4 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     updateProfile,
     apiCall,
   ]);
-}, initialState);
+});

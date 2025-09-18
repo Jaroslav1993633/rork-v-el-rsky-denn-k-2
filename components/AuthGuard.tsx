@@ -17,7 +17,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const authData = useAuth();
   const beekeepingData = useBeekeeping();
   
-  // Safely extract data with defaults
+  // Safely extract data with defaults - handle undefined contexts
   const isAuthenticated = authData?.isAuthenticated ?? false;
   const authLoading = authData?.isLoading ?? true;
   const isRegistered = beekeepingData?.isRegistered ?? false;

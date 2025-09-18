@@ -1,3 +1,6 @@
+// Import polyfill first to ensure React.use is available
+import '@/utils/react-polyfill';
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -8,7 +11,7 @@ import { BeekeepingProvider } from "@/hooks/beekeeping-store";
 import { AuthProvider } from "@/hooks/auth-store";
 import AuthGuard from "@/components/AuthGuard";
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(console.warn);
 
 const queryClient = new QueryClient();
 
@@ -104,6 +107,7 @@ const styles = StyleSheet.create({
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -111,7 +115,8 @@ export default function RootLayout() {
     const initializeApp = async () => {
       try {
         console.log('RootLayout: Starting app initialization...');
-        // Add a longer delay to ensure React and Expo Router are fully initialized
+        
+        // Wait for React and Expo Router to be fully initialized
         timeoutId = setTimeout(async () => {
           try {
             await SplashScreen.hideAsync();
@@ -121,9 +126,10 @@ export default function RootLayout() {
           }
           setIsReady(true);
           console.log('RootLayout: App ready');
-        }, 1000); // Increased delay for better stability
+        }, 2000); // Increased delay for better stability
       } catch (error) {
         console.error('Error initializing app:', error);
+        setHasError(true);
         setIsReady(true);
       }
     };
@@ -143,6 +149,15 @@ export default function RootLayout() {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#f39c12" />
         <Text style={styles.loadingText}>Načítavam...</Text>
+      </View>
+    );
+  }
+  
+  if (hasError) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>Chyba pri spustení</Text>
+        <Text style={styles.errorText}>Aplikácia sa reštartuje...</Text>
       </View>
     );
   }
