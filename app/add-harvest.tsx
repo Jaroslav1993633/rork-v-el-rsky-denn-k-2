@@ -12,7 +12,7 @@ import {
   Switch,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { X, Check, Droplets } from 'lucide-react-native';
+import { X, Check, Search } from 'lucide-react-native';
 import { useBeekeeping } from '@/hooks/beekeeping-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -32,6 +32,7 @@ export default function AddHarvestScreen() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState<boolean>(false);
   const [successOpacity] = useState(new Animated.Value(0));
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const yieldTypes = [
     { value: 'med' as YieldType, label: 'Med' },
@@ -143,9 +144,33 @@ export default function AddHarvestScreen() {
   const handleSelectAll = (value: boolean) => {
     setSelectAll(value);
     if (value) {
-      setSelectedHiveIds(hives.map(h => h.id));
+      setSelectedHiveIds(filteredHives.map(h => h.id));
     } else {
       setSelectedHiveIds([]);
+    }
+  };
+
+  // Filter hives based on search query
+  const filteredHives = hives.filter(hive => 
+    hive.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    hive.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Quick select hive by number
+  const handleQuickSelect = (query: string) => {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
+    
+    // Find hive by exact name or ID match
+    const exactMatch = hives.find(hive => 
+      hive.name.toLowerCase() === trimmedQuery.toLowerCase() ||
+      hive.id.toLowerCase() === trimmedQuery.toLowerCase() ||
+      hive.name === trimmedQuery
+    );
+    
+    if (exactMatch && !selectedHiveIds.includes(exactMatch.id)) {
+      setSelectedHiveIds(prev => [...prev, exactMatch.id]);
+      setSearchQuery(''); // Clear search after selection
     }
   };
 
@@ -220,6 +245,36 @@ export default function AddHarvestScreen() {
             )}
           </View>
           
+          {hives.length > 5 && (
+            <View style={styles.searchContainer}>
+              <View style={styles.searchInputContainer}>
+                <Search color="#9ca3af" size={20} />
+                <TextInput
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Hľadať úľ podľa čísla alebo názvu..."
+                  placeholderTextColor="#9ca3af"
+                  onSubmitEditing={() => handleQuickSelect(searchQuery)}
+                  returnKeyType="done"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity 
+                    onPress={() => setSearchQuery('')}
+                    style={styles.clearSearchButton}
+                  >
+                    <X color="#9ca3af" size={16} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {searchQuery.length > 0 && filteredHives.length === 0 && (
+                <Text style={styles.noResultsText}>
+                  Žiadne úle nenájdené pre &quot;{searchQuery}&quot;
+                </Text>
+              )}
+            </View>
+          )}
+          
           {hives.length === 0 ? (
             <View style={styles.noHivesContainer}>
               <Text style={styles.noHivesText}>
@@ -231,7 +286,7 @@ export default function AddHarvestScreen() {
             </View>
           ) : (
             <View style={styles.hivesCompactGrid}>
-              {hives.map(hive => {
+              {filteredHives.map(hive => {
                 const isSelected = selectedHiveIds.includes(hive.id);
                 return (
                   <TouchableOpacity
@@ -568,5 +623,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
     textAlign: 'center',
+  },
+  searchContainer: {
+    marginBottom: 16,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+  },
+  clearSearchButton: {
+    padding: 4,
+  },
+  noResultsText: {
+    fontSize: 14,
+    color: '#9ca3af',
+    textAlign: 'center',
+    marginTop: 12,
+    fontStyle: 'italic',
   },
 });
