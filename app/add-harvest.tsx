@@ -245,7 +245,7 @@ export default function AddHarvestScreen() {
             )}
           </View>
           
-          {hives.length > 5 && (
+          {hives.length > 0 && (
             <View style={styles.searchContainer}>
               <View style={styles.searchInputContainer}>
                 <Search color="#9ca3af" size={20} />
